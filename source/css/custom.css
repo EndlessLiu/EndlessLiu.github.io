@@ -1,0 +1,1340 @@
+/* ==========================================================================
+   EndlessLoop · Butterfly 定制样式
+   --------------------------------------------------------------------------
+   1.  设计令牌 (Design Tokens)
+   2.  基础排版
+   3.  页面背景层（极光 / 网格 / 光晕）
+   4.  顶部导航栏
+   5.  Banner（首页 / 内页 / 文章页）
+   6.  首页文章卡片
+   7.  侧边栏卡片
+   8.  文章详情页
+   9.  分页 / 按钮 / 标签
+   10. 表单控件
+   11. 滚动条 / 页脚 / 右下角按钮
+   12. 动画与关键帧
+   13. 深色模式
+   14. 响应式与性能降级
+
+   性能约定：
+   - 玻璃模糊半径控制在 12px，backdrop-filter 会随背景变化重算，半径越大越贵
+   - 动效只用 transform / opacity，避免触发重排
+   - 所有动画在 prefers-reduced-motion 或低性能设备上自动关闭
+   ========================================================================== */
+
+/* ==========================================================================
+   1. 设计令牌
+   ========================================================================== */
+
+:root {
+  /* 主色板：二次元樱花粉 → 电紫 → 天青 */
+  --el-sakura: #ff9ec4;
+  --el-sakura-deep: #ff6fa5;
+  --el-violet: #a78bfa;
+  --el-sky: #6ec8ff;
+  --el-mint: #5eead4;
+
+  /* 主渐变改为引用主色本身（原来是把同样三个十六进制又抄了一遍）。
+     好处是改 --el-sakura / --el-violet / --el-sky 会真的带着渐变一起变，
+     不会出现"改了令牌但渐变没跟着动"的静默漂移。
+     ⚠️ 但反方向的事不要"顺手优化"：渐变里那些带透明度的调色板颜色
+     （如 rgba(255, 158, 196, 0.5)）是**故意**写成字面量的。
+     用 color-mix(in srgb, var(--el-sakura) 50%, transparent) 表达更自洽，
+     可一旦浏览器不支持，整条 background-image 会被判为非法值丢弃 ——
+     不是降级成不透明，是整个声明消失。本站有 80 处这种写法，不划算。
+     上面 --el-grad-main 能用 var() 是因为它取的正好都是不透明色。 */
+  --el-grad-main: linear-gradient(
+    120deg,
+    var(--el-sakura) 0%,
+    var(--el-violet) 50%,
+    var(--el-sky) 100%
+  );
+
+  /* 玻璃拟态 */
+  --el-glass-bg: rgba(255, 255, 255, 0.55);
+  --el-glass-bg-soft: rgba(255, 255, 255, 0.38);
+  --el-glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --el-glass-border: rgba(255, 255, 255, 0.65);
+  --el-glass-border-dim: rgba(255, 255, 255, 0.35);
+  --el-glass-blur: 12px;
+
+  /* 液态玻璃三件套（Apple Vision Pro 观感的三个来源）：
+     sheen = 左上到右下的镜面高光渐变
+     inset = 上沿内发光，制造"玻璃有厚度"的错觉
+     edge  = 边缘折射亮线，只在悬停/激活时点亮 */
+  --el-liquid-sheen: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  --el-liquid-inset: rgba(255, 255, 255, 0.5);
+  --el-liquid-edge: rgba(255, 255, 255, 0.92);
+
+  /* 圆角 */
+  --el-radius-xl: 26px;
+  --el-radius-lg: 20px;
+  --el-radius-md: 14px;
+  --el-radius-sm: 9px;
+
+  /* 阴影 */
+  --el-shadow-1: 0 2px 10px rgba(38, 40, 74, 0.05);
+  --el-shadow-2: 0 8px 26px rgba(38, 40, 74, 0.09);
+  --el-shadow-3: 0 20px 46px rgba(38, 40, 74, 0.15);
+  --el-shadow-glow: 0 14px 38px rgba(167, 139, 250, 0.28);
+
+  --el-text: #1f2440;
+  --el-text-soft: #5a5f7d;
+  --el-text-mute: #8b90a8;
+  --el-hairline: rgba(38, 40, 74, 0.08);
+
+  --el-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --el-ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ---- 覆盖 Butterfly 自带变量（比堆 !important 干净） ---- */
+  --card-bg: var(--el-glass-bg);
+  --card-box-shadow: var(--el-shadow-2);
+  --card-hover-box-shadow: var(--el-shadow-3);
+  --card-meta: var(--el-text-mute);
+  /* 按钮三件套：--btn-bg 是常态底色，--btn-color 是文字色，
+     --btn-hover-color 是悬停底色。两个坑：
+     1) 悬停时文字色仍然是 --btn-color，所以悬停底色不能也是白色，否则白底白字；
+     2) shuoshuo 模板里有 `border: 1px solid var(--btn-bg)`，
+        渐变在 border 里是非法值，整条声明会被丢弃，所以这里必须是纯色。 */
+  --btn-bg: var(--el-sakura);
+  --btn-color: #fff;
+  --btn-hover-color: var(--el-violet);
+  --pseudo-hover: var(--el-sakura);
+  --scrollbar-color: var(--el-sakura);
+  --mark-bg: rgba(22, 20, 44, 0.32);
+  --headline-presudo: var(--el-sakura);
+
+  /* 上下篇导航的占位底色。主题给的是粉色 #ff9ec4，而它在这块的表现是
+     「脏褐」——因为 .pagination-related 是纯黑底，.cover 只有 opacity: .4，
+     两层相乘后 0.4 × #ff9ec4 = rgb(102,63,78)，实测就是这个色。
+     这里换成站内主渐变，并叠一层压暗：白字在亮粉/亮蓝上对比度不足
+     （已渲图确认），压暗后文字才读得清。
+     令牌值可以放多层渐变，因为两个消费者用的都是 background 简写：
+       pagination.pug:24      .cover(style=`background: ${direction.cover || 'var(--default-bg-color)'}`)
+       related_post.js:76     `<div class="cover" style="background: ${cover}"></div>` */
+  --default-bg-color: linear-gradient(120deg, rgba(28, 20, 52, 0.42), rgba(28, 20, 52, 0.42)),
+    var(--el-grad-main);
+}
+
+/* ==========================================================================
+   2. 基础排版
+   ========================================================================== */
+
+body {
+  font-family: 'Microsoft YaHei', 'PingFang SC', 'HarmonyOS Sans SC', -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--el-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(255, 158, 196, 0.32);
+  color: var(--el-text);
+}
+
+a {
+  transition: color 0.25s var(--el-ease);
+}
+
+/* 渐变文字工具类 */
+.el-grad-text {
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 滚动进场：JS 加 .el-in 触发，未启用 JS 时用 :root 上的 .no-fx 兜底 */
+.el-reveal {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  transition: opacity 0.7s var(--el-ease), transform 0.7s var(--el-ease);
+  will-change: opacity, transform;
+}
+
+.el-reveal.el-in {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+html.no-fx .el-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* ==========================================================================
+   3. 页面背景层
+   ========================================================================== */
+
+/* 壁纸做柔焦：二次元插画做背景时，模糊能把它压成"氛围底"，
+   内容层（玻璃卡片）再叠上去才有前后景深。
+   transform: scale 是必须的 —— 模糊会把边缘往外"吃掉"一圈，
+   不放大就会在四周露出底色白边。 */
+#web_bg {
+  background-color: #eef1fb;
+  filter: blur(4px) saturate(1.15);
+  transform: scale(1.05);
+  overflow: hidden;
+}
+
+/* 极光 + 科技网格：叠在背景图上、内容之下
+   ⚠️ 只用 ::after，绝不能用 ::before ——
+   Butterfly 的深色模式把 #web_bg:before 当作暗化遮罩，占用会破坏深色模式。
+   网格线放在最前面（CSS 里第一层画在最上面），压住极光，形成细密科技底纹。 */
+#web_bg::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: 0.75;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    radial-gradient(38% 44% at 18% 22%, rgba(255, 158, 196, 0.5), transparent 68%),
+    radial-gradient(34% 40% at 82% 18%, rgba(110, 200, 255, 0.45), transparent 66%),
+    radial-gradient(42% 46% at 68% 84%, rgba(167, 139, 250, 0.45), transparent 70%),
+    radial-gradient(30% 36% at 32% 88%, rgba(94, 234, 212, 0.34), transparent 68%);
+  background-size: 46px 46px, 46px 46px, auto, auto, auto, auto;
+  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  animation: el-aurora 26s ease-in-out infinite alternate,
+    el-grid-pan 40s linear infinite;
+  will-change: transform;
+}
+
+/* 粒子画布：由 site-fx.js 注入 */
+#fx-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   4. 顶部导航栏
+   ========================================================================== */
+
+#nav {
+  background: rgba(255, 255, 255, 0.42) !important;
+  backdrop-filter: blur(var(--el-glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--el-glass-blur)) saturate(180%);
+  border-bottom: 1px solid var(--el-glass-border-dim);
+  box-shadow: 0 4px 24px rgba(38, 40, 74, 0.06);
+  transition: background 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease);
+}
+
+/* 顶部一条渐变高光 */
+#nav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--el-grad-main);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+#nav .site-name {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: filter 0.3s var(--el-ease);
+}
+
+#nav .site-name:hover {
+  filter: brightness(1.15) drop-shadow(0 0 10px rgba(255, 158, 196, 0.55));
+}
+
+#nav #blog-info .site-icon {
+  border-radius: 30%;
+}
+
+/* 菜单项：hover 上浮 + 渐变下划线 */
+#nav #menus .menus_item > a,
+#nav #menus .site-page {
+  position: relative;
+  transition: transform 0.28s var(--el-ease), color 0.28s var(--el-ease);
+}
+
+#nav #menus .menus_item > a::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--el-grad-main);
+  transform: translateX(-50%);
+  transition: width 0.3s var(--el-ease);
+}
+
+#nav #menus .menus_item > a:hover {
+  transform: translateY(-2px);
+}
+
+#nav #menus .menus_item > a:hover::after {
+  width: 70%;
+}
+
+#nav #toggle-menu .site-page,
+#nav #search-button .site-page {
+  transition: transform 0.3s var(--el-ease-back);
+}
+
+#nav #toggle-menu:hover .site-page {
+  transform: rotate(90deg);
+}
+
+#nav #search-button:hover .site-page {
+  transform: scale(1.18);
+}
+
+/* 搜索弹层 */
+#search-dialog {
+  border-radius: var(--el-radius-lg);
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid var(--el-glass-border);
+  box-shadow: var(--el-shadow-3);
+}
+
+/* ==========================================================================
+   5. Banner
+   --------------------------------------------------------------------------
+   全站统一背景：让 #web_bg 成为唯一的背景来源。
+   --------------------------------------------------------------------------
+   此前页面顶部会「上下分成两张图」（顶部 400px 一张粉图、下面一张紫图），
+   那是三个原因叠出来的，必须一起处理，只修其中一两个都还会留缝：
+     1) header 自己的内联 background-image = banner.webp —— 它是不透明的，
+        把身后那一段 #web_bg 完全挡住；
+     2) 主题在 #page-header 上的兜底底色 background-color（$light-blue，
+        本站编译成 #ff9ec4）。这条最容易漏：只去掉 background-image，
+        会露出一整条纯粉，比原来更难看；
+     3) 本文件下面那两层遮罩原本都是「整块」的，底边正好收在 header 高度处，
+        于是 400px 位置留下一条硬边（详见各自注释）。
+   图片是通过内联 style 注入的（themes/butterfly/layout/includes/header/index.pug），
+   内联优先级高于样式表，所以必须 !important 才压得住。
+   ========================================================================== */
+
+#page-header {
+  overflow: hidden;
+  background-image: none !important;
+  background-color: transparent;
+}
+
+/* 装饰层：渐变洗色 + 科技网格（z-index 0，文字层提到 1）
+   末段必须是全透明 —— 原来这里是 rgba(12, 12, 30, 0.5)，底端 50% 黑，
+   正是 400px 处那条暗边最直接的来源。 */
+#page-header:not(.not-top-img)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(167, 139, 250, 0.2) 0%, rgba(255, 158, 196, 0.1) 45%, rgba(12, 12, 30, 0) 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 62px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 62px);
+  /* mask 让整层（连同网格线）在底边之前就淡尽。
+     不加的话网格线会在 header 底边被硬切一刀，又是一条缝。 */
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+}
+
+/* 标题遮罩：主题原本是在整块 header 上盖一层纯色 var(--mark-bg)，
+   矩形就是矩形，底边同样是硬台阶。改成向下淡出即可消除，同时保住标题
+   在照片背景上的可读性。
+   这里用 var(--mark-bg) 而不是写死颜色，是为了自动跟随亮/暗两套值
+   （亮 rgba(22,20,44,.32) / 暗 rgba(8,8,20,.5)，见本文件 97 与 1087 行）。 */
+#page-header:not(.not-top-img)::before {
+  z-index: 0;
+  background: linear-gradient(180deg, var(--mark-bg) 0%, transparent 100%);
+}
+
+#page-header #site-info,
+#page-header #page-site-info,
+#page-header #post-info,
+#page-header #scroll-down,
+#page-header .title-seo {
+  z-index: 1;
+}
+
+/* 首页大标题 */
+#page-header #site-title {
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-shadow: 0 4px 24px rgba(12, 12, 30, 0.45), 0 0 60px rgba(255, 158, 196, 0.35);
+  animation: el-title-in 1s var(--el-ease) both;
+}
+
+/* 打字机副标题 */
+#page-header #site-subtitle,
+#page-header #subtitle {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  letter-spacing: 1.6px;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(12, 12, 30, 0.6), 0 0 24px rgba(110, 200, 255, 0.5);
+  animation: el-fade-up 1s 0.25s var(--el-ease) both;
+}
+
+/* 光标闪烁 */
+#subtitle .typed-cursor,
+.typed-cursor {
+  color: var(--el-sakura);
+  text-shadow: 0 0 12px var(--el-sakura);
+}
+
+#page-header #site_social_icons .social-icon {
+  transition: transform 0.35s var(--el-ease-back), filter 0.35s var(--el-ease);
+}
+
+#page-header #site_social_icons .social-icon:hover {
+  transform: translateY(-5px) scale(1.22);
+  filter: drop-shadow(0 0 12px rgba(255, 158, 196, 0.9));
+}
+
+/* 下滑箭头 */
+#scroll-down .scroll-down-effects {
+  color: #fff;
+  filter: drop-shadow(0 0 10px rgba(110, 200, 255, 0.9));
+}
+
+/* 内页标题 */
+#page-header.not-home-page #page-site-info #site-title {
+  animation: el-fade-up 0.8s var(--el-ease) both;
+}
+
+/* 文章页标题 */
+#page-header.post-bg #post-info .post-title {
+  text-shadow: 0 3px 20px rgba(12, 12, 30, 0.5);
+  animation: el-title-in 0.9s var(--el-ease) both;
+}
+
+/* 无 Banner 时的页面标题 */
+#page-header.not-top-img .title-seo {
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==========================================================================
+   6. 首页文章卡片
+   ========================================================================== */
+
+#recent-posts .recent-post-item {
+  position: relative;
+  background: var(--el-glass-bg) !important;
+  backdrop-filter: blur(var(--el-glass-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--el-glass-blur)) saturate(170%);
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-xl);
+  box-shadow: var(--el-shadow-2);
+  overflow: hidden;
+  transition: transform 0.45s var(--el-ease), box-shadow 0.45s var(--el-ease),
+    border-color 0.45s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover {
+  transform: translateY(-9px);
+  box-shadow: var(--el-shadow-3), var(--el-shadow-glow);
+  border-color: rgba(255, 255, 255, 0.9);
+  /* 跟随光标的高光，坐标由 site-fx.js 写入 --el-mx / --el-my */
+  background:
+    radial-gradient(
+      340px circle at var(--el-mx, 50%) var(--el-my, 50%),
+      rgba(255, 255, 255, 0.5),
+      transparent 62%
+    ),
+    var(--el-glass-bg) !important;
+}
+
+/* 渐变描边：hover 时浮现 */
+#recent-posts .recent-post-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--el-grad-main);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover::before {
+  opacity: 1;
+}
+
+/* 高光扫过 */
+#recent-posts .recent-post-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  z-index: 1;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  pointer-events: none;
+  transition: left 0.75s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover::after {
+  left: 115%;
+}
+
+/* 封面：hover 缓慢放大 */
+#recent-posts .recent-post-item .post_cover {
+  overflow: hidden;
+}
+
+#recent-posts .recent-post-item .post_cover img.post-bg {
+  transition: transform 0.8s var(--el-ease), filter 0.5s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover .post_cover img.post-bg {
+  transform: scale(1.09);
+  filter: saturate(118%) brightness(1.04);
+}
+
+/* 标题 */
+#recent-posts .recent-post-item .article-title {
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  transition: color 0.3s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover .article-title {
+  color: var(--el-sakura-deep);
+}
+
+/* 标题左侧渐变条 */
+#recent-posts .recent-post-item .article-title::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 1em;
+  margin-right: 0;
+  vertical-align: -0.12em;
+  border-radius: 3px;
+  background: var(--el-grad-main);
+  transition: width 0.35s var(--el-ease), margin-right 0.35s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover .article-title::before {
+  width: 4px;
+  margin-right: 9px;
+}
+
+/* 摘要 */
+#recent-posts .recent-post-item .content {
+  color: var(--el-text-soft);
+  line-height: 1.85;
+}
+
+/* 元信息胶囊 */
+#recent-posts .recent-post-item .article-meta-wrap {
+  color: var(--el-text-mute);
+}
+
+#recent-posts .recent-post-item .article-meta-wrap a {
+  color: var(--el-text-mute);
+  transition: color 0.25s var(--el-ease);
+}
+
+#recent-posts .recent-post-item .article-meta-wrap a:hover {
+  color: var(--el-sakura-deep);
+}
+
+/* ==========================================================================
+   7. 侧边栏卡片
+   ========================================================================== */
+
+#aside-content .card-widget {
+  position: relative;
+  background: var(--el-glass-bg) !important;
+  backdrop-filter: blur(var(--el-glass-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--el-glass-blur)) saturate(170%);
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-lg);
+  box-shadow: var(--el-shadow-2);
+  overflow: hidden;
+  transition: transform 0.4s var(--el-ease), box-shadow 0.4s var(--el-ease);
+}
+
+#aside-content .card-widget:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--el-shadow-3);
+  background:
+    radial-gradient(
+      260px circle at var(--el-mx, 50%) var(--el-my, 50%),
+      rgba(255, 255, 255, 0.42),
+      transparent 64%
+    ),
+    var(--el-glass-bg) !important;
+}
+
+[data-theme='dark'] #recent-posts .recent-post-item:hover,
+[data-theme='dark'] #aside-content .card-widget:hover {
+  background:
+    radial-gradient(
+      300px circle at var(--el-mx, 50%) var(--el-my, 50%),
+      rgba(167, 139, 250, 0.22),
+      transparent 64%
+    ),
+    var(--el-glass-bg) !important;
+}
+
+/* 卡片标题前的渐变竖条 */
+#aside-content .card-widget .item-headline::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 0.9em;
+  margin-right: 8px;
+  vertical-align: -0.08em;
+  border-radius: 3px;
+  background: var(--el-grad-main);
+}
+
+#aside-content .card-widget .item-headline {
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+/* 头像 */
+#aside-content .card-info .avatar-img,
+#aside-content .avatar {
+  border-radius: 50%;
+  box-shadow: 0 8px 26px rgba(167, 139, 250, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.65);
+  transition: transform 0.7s var(--el-ease), box-shadow 0.5s var(--el-ease);
+}
+
+#aside-content .card-info .avatar-img:hover,
+#aside-content .avatar:hover {
+  transform: rotate(360deg) scale(1.08);
+  box-shadow: 0 10px 34px rgba(255, 158, 196, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.85);
+}
+
+/* ⚠️ 类名是单下划线（.author-info-name），不是 BEM 的双下划线。
+   主题模板 card_author.pug 输出的是 .author-info-name / .author-info-description，
+   写成 __name 会静默失效（选择器不匹配不报错，只是永远不生效）。 */
+#aside-content .card-info .author-info-name {
+  font-weight: 700;
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+#aside-content .card-info .author-info-description {
+  color: var(--el-text-soft);
+  line-height: 1.75;
+}
+
+/* GitHub 按钮 */
+#card-info-btn {
+  border-radius: 999px !important;
+  background: var(--el-grad-main) !important;
+  border: none;
+  box-shadow: 0 8px 22px rgba(167, 139, 250, 0.32);
+  transition: transform 0.35s var(--el-ease-back), box-shadow 0.35s var(--el-ease);
+}
+
+#card-info-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 14px 32px rgba(255, 158, 196, 0.45);
+}
+
+/* 公告 */
+#aside-content .card-announcement .item-headline {
+  color: var(--el-text);
+}
+
+/* 标签云 */
+#aside-content .card-tag-cloud a {
+  border-radius: 999px;
+  padding: 3px 11px !important;
+  border: 1px solid var(--el-glass-border-dim);
+  background: var(--el-glass-bg-soft);
+  transition: transform 0.3s var(--el-ease-back), background 0.3s var(--el-ease),
+    color 0.3s var(--el-ease);
+}
+
+#aside-content .card-tag-cloud a:hover {
+  transform: translateY(-3px) scale(1.06);
+  background: var(--el-grad-main);
+  color: #fff !important;
+  border-color: transparent;
+}
+
+/* 站点信息数字 */
+#aside-content .card-webinfo .webinfo-item .webinfo-count {
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+/* 目录 */
+#card-toc .toc-content .toc-link.active,
+#card-toc .toc-content .toc-link:hover {
+  color: var(--el-sakura-deep);
+}
+
+#card-toc .toc-content .toc-link.active {
+  background: rgba(255, 158, 196, 0.14);
+  border-radius: 6px;
+}
+
+/* ==========================================================================
+   8. 文章详情页
+   ========================================================================== */
+
+#post,
+#page {
+  border-radius: var(--el-radius-xl);
+  /* 顶部「纸张微光」：从顶沿往下 180px 内渐隐，给整块正文卡做出玻璃厚度。
+     这里**刻意用 background-image，而不是 ::before / ::after**：
+     #post / #page 实测是 position: static，伪元素想铺满就必须先补
+     position: relative，而 #post 里存在 .headerlink 这类绝对定位元素，
+     换包含块有位移风险（我实测过三类页面，能过，但没必要冒）。
+     背景层天生画在内容之下、天生被 border-radius 裁切，零风险，
+     而且把伪元素余量留给以后更复杂的动效。
+     颜色不写死：深色模式在下面第 13 节单独收暗。 */
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0) 180px
+  );
+}
+
+/* 正文排版 */
+#article-container {
+  color: var(--el-text);
+  line-height: 1.95;
+  letter-spacing: 0.2px;
+}
+
+#article-container h1,
+#article-container h2,
+#article-container h3,
+#article-container h4 {
+  position: relative;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+#article-container h2::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 0.86em;
+  margin-right: 10px;
+  vertical-align: -0.06em;
+  border-radius: 4px;
+  background: var(--el-grad-main);
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.5);
+}
+
+#article-container a {
+  color: var(--el-violet);
+  border-bottom: 1px dashed rgba(167, 139, 250, 0.5);
+  text-decoration: none;
+  transition: color 0.25s var(--el-ease), border-color 0.25s var(--el-ease);
+}
+
+#article-container a:hover {
+  color: var(--el-sakura-deep);
+  border-bottom-color: var(--el-sakura-deep);
+  border-bottom-style: solid;
+}
+
+#article-container img {
+  border-radius: var(--el-radius-md);
+  box-shadow: var(--el-shadow-2);
+  transition: transform 0.5s var(--el-ease), box-shadow 0.5s var(--el-ease);
+}
+
+#article-container img:hover {
+  transform: scale(1.015);
+  box-shadow: var(--el-shadow-3);
+}
+
+#article-container blockquote {
+  border-left: 4px solid transparent;
+  border-image: var(--el-grad-main) 1;
+  background: linear-gradient(90deg, rgba(255, 158, 196, 0.12), rgba(167, 139, 250, 0.06));
+  border-radius: 0 var(--el-radius-md) var(--el-radius-md) 0;
+  padding: 14px 20px;
+  color: var(--el-text-soft);
+}
+
+/* 行内代码 */
+#article-container code:not([class*='language-']) {
+  border-radius: 6px;
+  padding: 2px 7px;
+  background: rgba(255, 158, 196, 0.14);
+  color: var(--el-sakura-deep);
+  font-family: 'JetBrains Mono', Consolas, Menlo, monospace;
+}
+
+/* 代码块 */
+#article-container figure.highlight,
+#article-container pre {
+  border-radius: var(--el-radius-md);
+  box-shadow: var(--el-shadow-2);
+  border: 1px solid var(--el-hairline);
+}
+
+#article-container figure.highlight {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 代码块顶部渐变条 */
+#article-container figure.highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--el-grad-main);
+}
+
+/* 表格 */
+#article-container table {
+  border-radius: var(--el-radius-md);
+  overflow: hidden;
+  box-shadow: var(--el-shadow-1);
+}
+
+#article-container table thead th {
+  background: linear-gradient(120deg, rgba(255, 158, 196, 0.18), rgba(167, 139, 250, 0.16));
+  font-weight: 700;
+}
+
+/* 版权卡片 */
+#post .post-copyright {
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--el-glass-border);
+  box-shadow: var(--el-shadow-1);
+}
+
+/* 上下篇导航
+   ---------------------------------------------------------------------------
+   原选择器 `#pagination-post .prev-post / .next-post` 是给旧版 Butterfly 写的，
+   现在产物 HTML 里零命中（新版是 <nav class="pagination-post" id="pagination">
+   里包一个 <a class="pagination-related">），所以这一节的样式此前从未生效过。
+   注意：#pagination 这个 id 文章页是「上下篇导航」、列表页是「数字分页器」，
+   两者共用，所以必须带 .pagination-related 限定，不能写成 #pagination {}，
+   否则会误伤下面第 9 节那套胶囊分页按钮。 */
+#pagination .pagination-related {
+  border-radius: var(--el-radius-lg);
+  overflow: hidden;
+  transition: transform 0.4s var(--el-ease), box-shadow 0.4s var(--el-ease);
+}
+
+#pagination .pagination-related:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--el-shadow-2);
+}
+
+/* .cover 原本是 opacity: .4，那是「压在纯黑底上」的用法，和黑底相乘后
+   无论 --default-bg-color 换成什么颜色都会变成脏暗色（换深墨紫实测 rgb(12,11,20)）。
+   提到 1 之后：没设封面的文章走上面那个渐变令牌，设了封面的文章则正常显示封面图
+   —— 顺带修掉了「真封面也被压暗到 40%」的问题。
+   hover 同样要写：主题的 :hover 规则会把 opacity 降回 .5。
+   必须用 #pagination .pagination-related 限定，因为 .cover 这个 class 同时被
+   侧栏缩略图 .aside-list-item .cover 和归档页 .article-sort-item .cover 共用。 */
+#pagination .pagination-related .cover {
+  opacity: 1;
+}
+
+#pagination .pagination-related:hover .cover {
+  opacity: 1; /* 放大交给主题的 transform: scale(1.1)，不再变暗 */
+}
+
+/* 打赏 / 相关推荐 */
+#post .reward,
+#related-posts {
+  border-radius: var(--el-radius-md);
+}
+
+/* ==========================================================================
+   9. 分页 / 按钮 / 标签
+   ========================================================================== */
+
+#pagination .page-number,
+#pagination .extend {
+  border-radius: 999px;
+  border: 1px solid var(--el-glass-border-dim);
+  background: var(--el-glass-bg-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.3s var(--el-ease-back), background 0.3s var(--el-ease),
+    color 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease);
+}
+
+#pagination .page-number:hover,
+#pagination .extend:hover {
+  transform: translateY(-3px);
+  background: var(--el-grad-main);
+  color: #fff !important;
+  border-color: transparent;
+  box-shadow: 0 10px 24px rgba(167, 139, 250, 0.34);
+}
+
+#pagination .page-number.current {
+  background: var(--el-grad-main);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 26px rgba(255, 158, 196, 0.4);
+}
+
+/* 归档 / 分类 / 标签列表项 */
+#page .category-lists .category-list a,
+#page .tag-cloud-list a {
+  border-radius: 999px;
+  transition: transform 0.3s var(--el-ease-back), background 0.3s var(--el-ease);
+}
+
+#page .tag-cloud-list a:hover {
+  transform: translateY(-3px) scale(1.06);
+  background: var(--el-grad-main) !important;
+  color: #fff !important;
+}
+
+/* 文章内标签 */
+#post .post-tags a,
+.tag_share .tag {
+  border-radius: 999px;
+  transition: transform 0.3s var(--el-ease-back);
+}
+
+#post .post-tags a:hover {
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   10. 表单控件
+   ========================================================================== */
+
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+select {
+  border-radius: var(--el-radius-sm);
+  border: 1px solid var(--el-glass-border-dim);
+  background: var(--el-glass-bg-soft);
+  transition: border-color 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--el-violet);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+}
+
+/* ==========================================================================
+   11. 滚动条 / 页脚 / 右下角按钮
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--el-grad-main);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff6fa5, #8b6cf0);
+  background-clip: content-box;
+}
+
+#footer {
+  position: relative;
+  background: rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-top: 1px solid var(--el-glass-border-dim);
+  color: var(--el-text-soft);
+}
+
+/* ⚠️ 这里没有"伪元素冲突"要修，别被配置误导：
+   主题 footer.styl 里那条遮罩的生效条件是
+   `footer_img != false && mask.footer`，而本站 footer_img: false，
+   整块被短路 —— 编译产物里**根本没有** `#footer:before` 这条规则。
+   所以配置里的 mask.footer: true 是空转的，和下面这条 ::before 互不相干。
+   （我先前把它当成"遮罩被渐变线顶掉"的 bug，是误判，已纠正。） */
+
+#footer::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--el-grad-main);
+  opacity: 0.85;
+}
+
+/* 页脚玻璃细节：在渐变线下方补一段顶沿内发光，做出"玻璃有厚度"的观感。
+   只能放 ::after（::before 已被渐变线占用），且**不能**用 z-index: -1
+   藏到内容后面 —— 页脚只有一个 .footer-other 子元素，它自带
+   rgba(0,0,0,.1) 底色，会把负层整个盖住。
+   所以这层确实压在文字之上，高度必须收在文字开始之前：
+   .footer-other 的 padding-top 是 10px，这里 6px 内就淡尽，碰不到字。 */
+#footer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+#footer a {
+  color: var(--el-text-soft);
+  transition: color 0.25s var(--el-ease);
+}
+
+#footer a:hover {
+  color: var(--el-sakura-deep);
+}
+
+/* 右下角按钮组 */
+#rightside > div > button,
+#rightside > div > a {
+  border-radius: 50%;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--el-glass-border);
+  box-shadow: var(--el-shadow-1);
+  transition: transform 0.35s var(--el-ease-back), background 0.3s var(--el-ease),
+    color 0.3s var(--el-ease);
+}
+
+#rightside > div > button:hover,
+#rightside > div > a:hover {
+  transform: translateY(-3px) scale(1.1);
+  background: var(--el-grad-main) !important;
+  color: #fff !important;
+}
+
+/* 阅读进度条 */
+#rightside #go-up .scroll-percent {
+  color: var(--el-violet);
+  font-weight: 700;
+}
+
+/* 预加载动画 */
+#loading-box .loading-left-bg,
+#loading-box .loading-right-bg {
+  background: linear-gradient(135deg, #2a2340, #1b1b2e);
+}
+
+#loading-box .spinner-box .loading-word {
+  color: var(--el-sakura);
+}
+
+#loading-box .spinner-box .configure-core {
+  background: var(--el-grad-main);
+  box-shadow: 0 0 24px rgba(255, 158, 196, 0.6);
+}
+
+/* ==========================================================================
+   12. 动画与关键帧
+   ========================================================================== */
+
+@keyframes el-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, -2.5%, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-3%, 2%, 0) scale(1.04);
+  }
+}
+
+/* 只平移前两层网格，后面 4 层极光锚定不动，所以必须写满 6 个值 */
+@keyframes el-grid-pan {
+  0% {
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 46px 46px, 46px 46px, 0 0, 0 0, 0 0, 0 0;
+  }
+}
+
+@keyframes el-title-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes el-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes el-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes el-pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 158, 196, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(255, 158, 196, 0);
+  }
+}
+
+/* ==========================================================================
+   13. 深色模式
+   ========================================================================== */
+
+[data-theme='dark'] {
+  --el-glass-bg: rgba(30, 32, 54, 0.55);
+  --el-glass-bg-soft: rgba(30, 32, 54, 0.4);
+  --el-glass-bg-strong: rgba(26, 28, 48, 0.82);
+  --el-glass-border: rgba(255, 255, 255, 0.14);
+  --el-glass-border-dim: rgba(255, 255, 255, 0.08);
+
+  /* 深色下高光要更含蓄，否则玻璃会发灰 */
+  --el-liquid-sheen: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.03) 38%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  --el-liquid-inset: rgba(255, 255, 255, 0.14);
+  --el-liquid-edge: rgba(255, 255, 255, 0.3);
+
+  --el-text: rgba(255, 255, 255, 0.86);
+  --el-text-soft: rgba(255, 255, 255, 0.66);
+  --el-text-mute: rgba(255, 255, 255, 0.48);
+  --el-hairline: rgba(255, 255, 255, 0.1);
+
+  --el-shadow-1: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --el-shadow-2: 0 8px 26px rgba(0, 0, 0, 0.42);
+  --el-shadow-3: 0 20px 46px rgba(0, 0, 0, 0.55);
+  --el-shadow-glow: 0 14px 38px rgba(167, 139, 250, 0.32);
+
+  --card-meta: var(--el-text-mute);
+  --mark-bg: rgba(8, 8, 20, 0.5);
+  --scrollbar-color: var(--el-violet);
+}
+
+[data-theme='dark'] #web_bg::after {
+  opacity: 0.5;
+}
+
+[data-theme='dark'] #nav {
+  background: rgba(18, 19, 34, 0.55) !important;
+}
+
+[data-theme='dark'] #footer {
+  background: rgba(18, 19, 34, 0.4) !important;
+}
+
+/* 正文卡与页脚的顶沿微光在深色下要收着，否则深底玻璃会发灰。
+   数值参照第 1 节 --el-liquid-sheen 的深色版（0.5 → 0.14 的比例）。 */
+[data-theme='dark'] #post,
+[data-theme='dark'] #page {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0) 180px
+  );
+}
+
+[data-theme='dark'] #footer::after {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+[data-theme='dark'] #article-container code:not([class*='language-']) {
+  background: rgba(255, 158, 196, 0.2);
+  color: #ffb8d4;
+}
+
+[data-theme='dark'] #recent-posts .recent-post-item::after {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 100%
+  );
+}
+
+[data-theme='dark'] #recent-posts .recent-post-item:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+[data-theme='dark'] #aside-content .card-info .avatar-img,
+[data-theme='dark'] #aside-content .avatar {
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.14);
+}
+
+/* ==========================================================================
+   14. 响应式与性能降级
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+  #recent-posts .recent-post-item {
+    border-radius: var(--el-radius-lg);
+  }
+
+  #aside-content .card-widget {
+    border-radius: var(--el-radius-md);
+  }
+
+  /* 移动端 backdrop-filter 开销高，降低模糊半径 */
+  #nav,
+  #recent-posts .recent-post-item,
+  #aside-content .card-widget,
+  #footer {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* 移动端 fixed 背景会拖慢滚动 */
+  #page-header.full_page {
+    background-attachment: scroll !important;
+  }
+
+  /* 竖屏取景：background.webp 是 1672×941（约 16:9）的横构图，
+     手机竖屏（如 390×844）用 cover 后，可视宽度只占原图约 26%，
+     而默认的 50% 50% 取的是正中 —— 那里是天空和城市，人物会整个出画。
+     往左偏移到 22% 把人物拉回画面里。这个值是按原图人物位置算的，
+     改图的话要跟着改。 */
+  #web_bg {
+    background-position: 22% 50%;
+  }
+
+  #recent-posts .recent-post-item:hover {
+    transform: none;
+  }
+
+  #web_bg::after {
+    animation: none;
+  }
+}
+
+/* 尊重系统「减少动态效果」设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  #web_bg::after {
+    animation: none;
+  }
+
+  .el-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 不支持 backdrop-filter 时退回不透明背景，保证可读性 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #nav {
+    background: rgba(255, 255, 255, 0.94) !important;
+  }
+
+  #recent-posts .recent-post-item,
+  #aside-content .card-widget {
+    background: rgba(255, 255, 255, 0.94) !important;
+  }
+
+  [data-theme='dark'] #nav {
+    background: rgba(20, 21, 38, 0.96) !important;
+  }
+
+  [data-theme='dark'] #recent-posts .recent-post-item,
+  [data-theme='dark'] #aside-content .card-widget {
+    background: rgba(24, 25, 44, 0.96) !important;
+  }
+}
