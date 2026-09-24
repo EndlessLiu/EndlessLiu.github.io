@@ -1,0 +1,870 @@
+/* ==========================================================================
+   EndlessLoop · 二期视觉层（Vision Pro 液态玻璃 / 流光 / 科技元素）
+   --------------------------------------------------------------------------
+   加载顺序：custom.css → music.css → vision.css（必须最后）
+   所以这个文件里可以放心覆盖前两个文件的同名声明。
+
+   为什么单开一个文件而不是往 custom.css 里塞：
+   custom.css 是一期的"玻璃拟态 + 二次元"基线，已经在正常工作；
+   二期这些是叠加层，独立成文件便于整体开关、也便于回退。
+
+   目录：
+     1.  全屏背景流光
+     2.  液态玻璃层（导航 / 卡片 / 按钮 / 代码块）
+     3.  首页 hero 个人资料卡
+     4.  社交图标（含小红书 mask 图标）
+     5.  代码块科技元素
+     6.  返回顶部进度环
+     7.  留言板
+     8.  鼠标交互（跟随光标的玻璃环 / 点击波纹）
+     9.  深色模式
+     10. 响应式与性能降级
+
+   性能约定（沿用一期）：
+   - 只动 transform / opacity / box-shadow，不动 width/height/top/left
+   - 新增的持续动画只有"背景流光"一个，且 9s 一轮、低频
+   - 降级开关统一看 window.EL_CAPS（由 site-fx.js 写入）
+   ========================================================================== */
+
+/* ==========================================================================
+   1. 全屏背景流光
+   --------------------------------------------------------------------------
+   光束元素 .el-beam 由 vision.js 注入到 #web_bg 内部（不是 body）。
+   为什么不直接用 #web_bg::after：
+   那个伪元素已经有 6 层渐变 + 两条动画（el-aurora / el-grid-pan），
+   而 el-grid-pan 占用了 background-position —— 光束也需要动
+   background-position，同一个属性被两条动画驱动时后者会完全覆盖前者，
+   结果是网格停摆。所以光束必须有自己的元素和自己的动画时间轴。
+
+   注入到 #web_bg 里还有个好处：#web_bg 上有 filter，
+   子元素会被一起滤镜处理，而且 filter 会隔离混合模式，
+   光束的 mix-blend-mode 不会漏到正文内容上。
+   ========================================================================== */
+
+.el-beam {
+  position: absolute;
+  top: -25%;
+  left: -50%;
+  width: 200%;
+  height: 150%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.34) 48%,
+    rgba(255, 255, 255, 0.16) 53%,
+    transparent 62%
+  );
+  animation: el-beam-sweep 9s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* 9s 一轮，刻意和极光的 26s 不同步 ——
+   两个周期错开，肉眼就看不出循环，背景像是"活的"。 */
+@keyframes el-beam-sweep {
+  0% {
+    transform: translate3d(-55%, 0, 0) rotate(2deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  45% {
+    transform: translate3d(55%, 0, 0) rotate(2deg);
+    opacity: 0.85;
+  }
+  60% {
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(55%, 0, 0) rotate(2deg);
+    opacity: 0;
+  }
+}
+
+/* 视差：vision.js 在 rAF 里做插值后直接写 style.transform。
+   为什么不走 CSS 自定义属性 + transition：
+   未用 @property 注册的自定义属性不是可动画类型，
+   改它的值不会触发依赖它的 transform 过渡（会直接跳变）。
+   而且 JS 端已经在插值了，再叠一层 CSS 过渡反而糊。
+   注意 JS 写内联 transform 时必须把 scale(1.05) 一起带上，
+   否则会覆盖掉上面 #web_bg 里的放大，四周重新露出模糊白边。 */
+#web_bg {
+  transform: scale(1.05);
+}
+
+/* ==========================================================================
+   2. 液态玻璃层
+   --------------------------------------------------------------------------
+   三个特征：镜面高光 / 上沿内发光 / 边缘折射。
+   卡片类的 ::before、::after 在 #recent-posts .recent-post-item 上
+   已被一期占用，所以这里统一改用 box-shadow 的 inset 做，
+   好处是和既有的 background !important 声明完全不冲突
+   （background 是整体覆盖，后写的会吃掉先写的；
+   box-shadow 可以叠加，不存在这个问题）。
+   ========================================================================== */
+
+/* 侧栏卡片：::before 空闲，可以上真正的镜面渐变 */
+#aside-content .card-widget {
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset), var(--el-shadow-2);
+}
+
+#aside-content .card-widget::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--el-liquid-sheen);
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity 0.45s var(--el-ease);
+}
+
+#aside-content .card-widget:hover::before {
+  opacity: 1;
+}
+
+#aside-content .card-widget:hover {
+  box-shadow: inset 0 1px 0 var(--el-liquid-edge), var(--el-shadow-3),
+    0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+/* 底沿折射光：光像是从卡片下方透上来的，补齐"玻璃有厚度"的第三边。
+   侧栏卡片的 ::after 是空闲的（::before 给了镜面高光），所以这里能用
+   真正的渐变层，而不必像首页卡片那样只能用 box-shadow 的 inset 凑。
+   .card-widget 实测是 position: relative + overflow: hidden，
+   所以 inset: 0 会被 border-radius 自然裁掉，不会溢出圆角；
+   内容层在上面 `> *` 那条规则里已经统一提到 z-index: 1，不会被盖住。 */
+#aside-content .card-widget::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(255, 255, 255, 0) 28px
+  );
+}
+
+/* 卡片内容要压在 ::before 上面，否则高光会盖住文字 */
+#aside-content .card-widget > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 首页文章卡：伪元素被占用，只用内发光 + 边缘折射 */
+#recent-posts .recent-post-item {
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset), var(--el-shadow-2);
+}
+
+#recent-posts .recent-post-item:hover {
+  box-shadow: inset 0 1px 0 var(--el-liquid-edge), inset 0 0 60px rgba(255, 255, 255, 0.08),
+    var(--el-shadow-3), var(--el-shadow-glow);
+}
+
+/* 正文页 / 独立页面 */
+#post,
+#page {
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset), var(--el-shadow-2);
+}
+
+/* 导航栏：原来这里有一份 `#nav` 的 backdrop-filter + 一条 `#nav::before` 顶部高光。
+   两者现已全部并入 custom.css 的「4. 顶部导航栏 —— 居中悬浮胶囊」一节，删掉。
+   原因不是审美：custom.css 后加载，它原来那条
+   `background: rgba(255,255,255,0.42) !important` 本就压住了这里的 backdrop-filter，
+   于是两条 blur（12px 与 --el-glass-blur）里只有一条生效，另一条是死代码 ——
+   这正是滚动后导航观感"和设计值对不上"的来源。同一个选择器统一到一处。 */
+
+/* 页脚 */
+#footer {
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset);
+}
+
+/* 右下角按钮组：加边缘折射，悬停时点亮 */
+#rightside > div > button,
+#rightside > div > a {
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset), var(--el-shadow-1);
+}
+
+#rightside > div > button:hover,
+#rightside > div > a:hover {
+  box-shadow: inset 0 1px 0 var(--el-liquid-edge), 0 10px 24px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.4);
+}
+
+/* GitHub 按钮 */
+#card-info-btn {
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 22px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.32);
+}
+
+#card-info-btn:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 14px 32px hsla(var(--accent-hue), 100%, 81%, 0.45);
+}
+
+/* 分页按钮 */
+#pagination .page-number,
+#pagination .extend {
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset);
+}
+
+#pagination .page-number:hover,
+#pagination .extend:hover {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 10px 24px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.34);
+}
+
+/* 液态按压：按下时轻微回缩 + 内发光变强，模拟玻璃被压下的形变。
+   只给真正可点的元素加，避免误伤。 */
+#card-info-btn:active,
+#pagination .page-number:active,
+#pagination .extend:active,
+#rightside > div > button:active,
+.el-music-toggle:active {
+  transform: scale(0.965);
+  transition-duration: 0.09s;
+}
+
+/* ==========================================================================
+   3. 首页 hero 个人资料卡
+   --------------------------------------------------------------------------
+   配合 aside.position: left —— 侧栏在左、文章在右，
+   所以作者卡是整个页面第一眼的视觉重心，值得单独精修。
+
+   ⚠️ 主题模板输出的类名是 .author-info-name / .author-info-description
+      （单下划线），不是 BEM 的双下划线。
+   ⚠️ .avatar-img 是主题的**全局**类，移动端侧边抽屉里也用同一个类名，
+      所以下面所有头像规则都必须用 #aside-content .card-info 限定作用域，
+      写成裸 .avatar-img 会把移动端抽屉的头像一起改掉。
+   ========================================================================== */
+
+#aside-content .card-info {
+  padding-top: 26px;
+}
+
+#aside-content .card-info .avatar-img {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  /* 渐变描边环：用一个 conic 渐变做底，中间被 img 盖住只露出 4px 边 */
+  background: conic-gradient(
+    from 0deg,
+    hsl(var(--accent-hue), 100%, 81%),
+    hsl(calc(var(--accent-hue) - 37), 92%, 76%),
+    hsl(calc(var(--accent-hue) - 74), 100%, 72%),
+    hsl(calc(var(--accent-hue) - 110), 77%, 64%),
+    hsl(var(--accent-hue), 100%, 81%)
+  );
+  box-shadow: 0 10px 30px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.38);
+  transition: transform 0.9s var(--el-ease), box-shadow 0.5s var(--el-ease);
+}
+
+#aside-content .card-info .avatar-img img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  /* 环和图片之间留一圈玻璃色，让描边"浮"起来 */
+  border: 3px solid var(--el-glass-bg-strong);
+}
+
+/* 主题自带 .avatar-img img:hover { rotate(360deg) }。
+   外层容器已经在转了，再转一次会变成 720° 的"双倍速"转速，
+   观感上是抽搐而不是旋转，所以这里把内层那圈关掉。 */
+#aside-content .card-info .avatar-img img:hover {
+  transform: none;
+}
+
+#aside-content .card-info .avatar-img:hover {
+  transform: rotate(360deg) scale(1.05);
+  box-shadow: 0 14px 40px hsla(var(--accent-hue), 100%, 81%, 0.55);
+}
+
+/* 缓慢自转的柔光，让头像"发亮" */
+#aside-content .card-info .avatar-img::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 60%, hsla(var(--accent-hue), 100%, 81%, 0.5) 80%, transparent 100%);
+  filter: blur(6px);
+  z-index: -1;
+  animation: el-halo-spin 7s linear infinite;
+}
+
+@keyframes el-halo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#aside-content .card-info .author-info-name {
+  margin-top: 14px;
+  font-size: 1.75em;
+  letter-spacing: 0.5px;
+}
+
+#aside-content .card-info .author-info-description {
+  margin-top: 6px;
+  font-size: 0.94em;
+  line-height: 1.9;
+  letter-spacing: 0.2px;
+}
+
+/* 三个计数：主题排版是 display: table + table-cell，
+   这里改成 flex 药丸，顺便把 hover 做成上浮。 */
+#aside-content .card-info .site-data {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 6px;
+}
+
+#aside-content .card-info .site-data > a {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 9px 4px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg-soft);
+  transition: transform 0.35s var(--el-ease-back), background 0.35s var(--el-ease),
+    border-color 0.35s var(--el-ease);
+}
+
+#aside-content .card-info .site-data > a:hover {
+  transform: translateY(-4px);
+  border-color: transparent;
+  background: var(--el-grad-main);
+}
+
+#aside-content .card-info .site-data .headline {
+  font-size: 0.78em;
+  opacity: 0.72;
+}
+
+#aside-content .card-info .site-data .length-num {
+  margin-top: 2px;
+  font-size: 1.16em;
+  font-weight: 700;
+}
+
+#aside-content .card-info .site-data > a:hover .headline,
+#aside-content .card-info .site-data > a:hover .length-num {
+  color: #fff;
+}
+
+/* ==========================================================================
+   4. 社交图标
+   ========================================================================== */
+
+/* 作者卡里的一排社交图标：做成圆形玻璃按钮。
+   作用域限定在 .card-info-social-icons，不影响 Banner 的 #site_social_icons。 */
+#aside-content .card-info .card-info-social-icons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+#aside-content .card-info .card-info-social-icons .social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 50%;
+  background: var(--el-glass-bg-soft);
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset);
+  transition: transform 0.35s var(--el-ease-back), background 0.35s var(--el-ease),
+    box-shadow 0.35s var(--el-ease);
+}
+
+#aside-content .card-info .card-info-social-icons .social-icon:hover {
+  transform: translateY(-4px) scale(1.08);
+  background: var(--el-glass-bg-strong);
+  box-shadow: inset 0 1px 0 var(--el-liquid-edge), 0 10px 22px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35);
+}
+
+/* 主题给 .card-info-social-icons i 设了 hover 旋转 360°，
+   圆形按钮上转图标会显得晃，这里关掉只保留上浮。 */
+#aside-content .card-info .card-info-social-icons i:hover {
+  transform: none;
+}
+
+#aside-content .card-info .card-info-social-icons .social-icon i {
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+/* 小红书图标：FontAwesome 里没有这个牌子（7.3.1 实测无 xiaohongshu / xhs），
+   所以用 Simple Icons（CC0 1.0）的图标，以 mask 方式内联成 data-URI：
+   mask 只取形状的 alpha，颜色由 background-color: currentColor 提供，
+   于是它会自动跟随 <i> 上的内联 style 里的品牌色（#FF2442）。
+   data-URI 已内联，不产生任何额外网络请求。 */
+i.el-icon-xhs {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-color: currentColor;
+  -webkit-mask: url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M22.405%209.879c.002.016.01.02.07.019h.725a.797.797%200%200%200%20.78-.972.794.794%200%200%200-.884-.618.795.795%200%200%200-.692.794c0%20.101-.002.666.001.777zm-11.509%204.808c-.203.001-1.353.004-1.685.003a2.528%202.528%200%200%201-.766-.126.025.025%200%200%200-.03.014L7.7%2016.127a.025.025%200%200%200%20.01.032c.111.06.336.124.495.124.66.01%201.32.002%201.981%200%20.01%200%20.02-.006.023-.015l.712-1.545a.025.025%200%200%200-.024-.036zM.477%209.91c-.071%200-.076.002-.076.01a.834.834%200%200%200-.01.08c-.027.397-.038.495-.234%203.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681%201.523.787%201.74.008.015.011.02.017.02.008%200%20.033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029%200-.033-.03-.034zm7.203%203.757a1.427%201.427%200%200%201-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443%200%200%200-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153%201.964.233%202.946.05.4.186%201.085.487%201.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126%200%200%201-.116-.178l1.178-2.625a.025.025%200%200%200-.023-.035l-1.318-.003a.148.148%200%200%201-.135-.21l.876-1.954a.025.025%200%200%200-.023-.035h-1.56c-.01%200-.02.006-.024.015l-.926%202.068c-.085.169-.314.634-.399.938a.534.534%200%200%200-.02.191.46.46%200%200%200%20.23.378.981.981%200%200%200%20.46.119h.59c.041%200-.688%201.482-.834%201.972a.53.53%200%200%200-.023.172.465.465%200%200%200%20.23.398c.15.092.342.12.475.12l1.66-.001c.01%200%20.02-.006.023-.015l.575-1.28a.025.025%200%200%200-.024-.035zm-6.93-4.937H3.1a.032.032%200%200%200-.034.033c0%201.048-.01%202.795-.01%206.829%200%20.288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465%201.064.555%201.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33%200-4.66-.007-6.991a.032.032%200%200%200-.032-.032zm11.784%206.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08%200%20.075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064%200-.075-.006-.075.073v1.445c0%20.083-.006.077.08.077h.854c.075%200%20.07-.004.07.07v4.624c0%20.095.008.084-.085.084-.37%200-1.11-.002-1.304%200-.048.001-.06.03-.06.03l-.697%201.519s-.014.025-.008.036c.006.01.013.008.058.008%201.748.003%203.495.002%205.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0%20.013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303%200-.072-.006-.071.07-.07l.733-.003c.041%200%20.081.002.12.015.093.025.16.107.165.204.006.431.002%201.153.001%201.153zm2.67.244a1.953%201.953%200%200%200-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823%201.823%200%200%200-.153-.53%201.533%201.533%200%200%200-.677-.71%202.167%202.167%200%200%200-1-.258c-.153-.003-.567%200-.72%200-.07%200-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016%200-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0%20.09-.004.082.082.082h.913c.082%200%20.072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068%200-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082%200%20.076-.006.076.079v3.225c0%20.088-.007.081.082.081h1.43c.09%200%20.082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098%200%20.191.02.28.061a.46.46%200%200%201%20.274.407c.008.395.003.79.003%201.185%200%20.259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57%201.303a.045.045%200%200%200%20.04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03%202.03%200%200%200%20.408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38%200%20.078-.029-.641-.724-.998z%22%2F%3E%3C%2Fsvg%3E') center / contain no-repeat;
+  mask: url('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M22.405%209.879c.002.016.01.02.07.019h.725a.797.797%200%200%200%20.78-.972.794.794%200%200%200-.884-.618.795.795%200%200%200-.692.794c0%20.101-.002.666.001.777zm-11.509%204.808c-.203.001-1.353.004-1.685.003a2.528%202.528%200%200%201-.766-.126.025.025%200%200%200-.03.014L7.7%2016.127a.025.025%200%200%200%20.01.032c.111.06.336.124.495.124.66.01%201.32.002%201.981%200%20.01%200%20.02-.006.023-.015l.712-1.545a.025.025%200%200%200-.024-.036zM.477%209.91c-.071%200-.076.002-.076.01a.834.834%200%200%200-.01.08c-.027.397-.038.495-.234%203.06-.012.24-.034.389-.135.607-.026.057-.033.042.003.112.046.092.681%201.523.787%201.74.008.015.011.02.017.02.008%200%20.033-.026.047-.044.147-.187.268-.391.371-.606.306-.635.44-1.325.486-1.706.014-.11.021-.22.03-.33l.204-2.616.022-.293c.003-.029%200-.033-.03-.034zm7.203%203.757a1.427%201.427%200%200%201-.135-.607c-.004-.084-.031-.39-.235-3.06a.443.443%200%200%200-.01-.082c-.004-.011-.052-.008-.076-.008h-1.48c-.03.001-.034.005-.03.034l.021.293c.076.982.153%201.964.233%202.946.05.4.186%201.085.487%201.706.103.215.223.419.37.606.015.018.037.051.048.049.02-.003.742-1.642.804-1.765.036-.07.03-.055.003-.112zm3.861-.913h-.872a.126.126%200%200%201-.116-.178l1.178-2.625a.025.025%200%200%200-.023-.035l-1.318-.003a.148.148%200%200%201-.135-.21l.876-1.954a.025.025%200%200%200-.023-.035h-1.56c-.01%200-.02.006-.024.015l-.926%202.068c-.085.169-.314.634-.399.938a.534.534%200%200%200-.02.191.46.46%200%200%200%20.23.378.981.981%200%200%200%20.46.119h.59c.041%200-.688%201.482-.834%201.972a.53.53%200%200%200-.023.172.465.465%200%200%200%20.23.398c.15.092.342.12.475.12l1.66-.001c.01%200%20.02-.006.023-.015l.575-1.28a.025.025%200%200%200-.024-.035zm-6.93-4.937H3.1a.032.032%200%200%200-.034.033c0%201.048-.01%202.795-.01%206.829%200%20.288-.269.262-.28.262h-.74c-.04.001-.044.004-.04.047.001.037.465%201.064.555%201.263.01.02.03.033.051.033.157.003.767.009.938-.014.153-.02.3-.06.438-.132.3-.156.49-.419.595-.765.052-.172.075-.353.075-.533.002-2.33%200-4.66-.007-6.991a.032.032%200%200%200-.032-.032zm11.784%206.896c0-.014-.01-.021-.024-.022h-1.465c-.048-.001-.049-.002-.05-.049v-4.66c0-.072-.005-.07.07-.07h.863c.08%200%20.075.004.075-.074V8.393c0-.082.006-.076-.08-.076h-3.5c-.064%200-.075-.006-.075.073v1.445c0%20.083-.006.077.08.077h.854c.075%200%20.07-.004.07.07v4.624c0%20.095.008.084-.085.084-.37%200-1.11-.002-1.304%200-.048.001-.06.03-.06.03l-.697%201.519s-.014.025-.008.036c.006.01.013.008.058.008%201.748.003%203.495.002%205.243.002.03-.001.034-.006.035-.033v-1.539zm4.177-3.43c0%20.013-.007.023-.02.024-.346.006-.692.004-1.037.004-.014-.002-.022-.01-.022-.024-.005-.434-.007-.869-.01-1.303%200-.072-.006-.071.07-.07l.733-.003c.041%200%20.081.002.12.015.093.025.16.107.165.204.006.431.002%201.153.001%201.153zm2.67.244a1.953%201.953%200%200%200-.883-.222h-.18c-.04-.001-.04-.003-.042-.04V10.21c0-.132-.007-.263-.025-.394a1.823%201.823%200%200%200-.153-.53%201.533%201.533%200%200%200-.677-.71%202.167%202.167%200%200%200-1-.258c-.153-.003-.567%200-.72%200-.07%200-.068.004-.068-.065V7.76c0-.031-.01-.041-.046-.039H17.93s-.016%200-.023.007c-.006.006-.008.012-.008.023v.546c-.008.036-.057.015-.082.022h-.95c-.022.002-.028.008-.03.032v1.481c0%20.09-.004.082.082.082h.913c.082%200%20.072.128.072.128V11.19s.003.117-.06.117h-1.482c-.068%200-.06.082-.06.082v1.445s-.01.068.064.068h1.457c.082%200%20.076-.006.076.079v3.225c0%20.088-.007.081.082.081h1.43c.09%200%20.082.007.082-.08v-3.27c0-.029.006-.035.033-.035l2.323-.003c.098%200%20.191.02.28.061a.46.46%200%200%201%20.274.407c.008.395.003.79.003%201.185%200%20.259-.107.367-.33.367h-1.218c-.023.002-.029.008-.028.033.184.437.374.871.57%201.303a.045.045%200%200%200%20.04.026c.17.005.34.002.51.003.15-.002.517.004.666-.01a2.03%202.03%200%200%200%20.408-.075c.59-.18.975-.698.976-1.313v-1.981c0-.128-.01-.254-.034-.38%200%20.078-.029-.641-.724-.998z%22%2F%3E%3C%2Fsvg%3E') center / contain no-repeat;
+  /* 图标视觉重量比 FA 的字形轻，稍微放大一点才和邻居等重 */
+  font-size: 1.12em;
+  vertical-align: -0.12em;
+}
+
+/* Banner 上的同一组图标也跟着变圆钮（移动端才显示） */
+#page-header #site_social_icons .social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ==========================================================================
+   5. 代码块科技元素
+   --------------------------------------------------------------------------
+   配套 code_blocks.macStyle: true —— 主题会给代码块加上三色圆点，
+   这里在一期的基础上补发光、扫描线和行号槽。
+   ========================================================================== */
+
+#article-container figure.highlight {
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset), var(--el-shadow-2);
+}
+
+/* 顶部渐变条发光（一期已画了 3px 渐变条，这里加光晕） */
+#article-container figure.highlight::before {
+  box-shadow: 0 0 18px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.65);
+}
+
+/* 代码区叠一层极淡的扫描线，做出"终端屏幕"的质感。
+   放在 ::after 上：一期没有占用 figure.highlight 的伪元素。 */
+#article-container figure.highlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.4;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.045) 0 1px,
+    transparent 1px 4px
+  );
+}
+
+/* macStyle 的三色圆点在 .highlight-tools 里，给它托个玻璃底 */
+#article-container figure.highlight .highlight-tools {
+  border-bottom: 1px solid var(--el-hairline);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), transparent);
+}
+
+/* 行号槽：竖向渐变，越往下越淡 */
+#article-container figure.highlight .gutter {
+  background: linear-gradient(
+    180deg,
+    hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.14),
+    hsla(var(--accent-hue), 100%, 81%, 0.05) 60%,
+    transparent
+  );
+  border-right: 1px solid var(--el-hairline);
+}
+
+#article-container figure.highlight .gutter pre {
+  color: var(--el-text-mute);
+}
+
+/* 行内代码微光 */
+#article-container code:not([class*='language-']) {
+  box-shadow: inset 0 0 0 1px hsla(var(--accent-hue), 100%, 81%, 0.16);
+}
+
+/* ==========================================================================
+   6. 返回顶部进度环
+   --------------------------------------------------------------------------
+   SVG 由 vision.js 注入到 #go-up 内部，viewBox 36x36、半径 16，
+   周长 = 2πr ≈ 100.53，所以 dasharray 写 100.53，
+   JS 只改 stroke-dashoffset（100.53 → 0），不碰任何布局属性。
+   主题原生的 .scroll-percent 数字保留，作为无障碍与降级。
+   ========================================================================== */
+
+#rightside #go-up {
+  position: relative;
+  overflow: visible;
+}
+
+.el-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 41px;
+  height: 41px;
+  margin: -20.5px 0 0 -20.5px;
+  pointer-events: none;
+  transform: rotate(-90deg);
+  opacity: 0;
+  transition: opacity 0.4s var(--el-ease);
+}
+
+/* 环只在按钮露出来之后才显示，避免初始化时闪一下 */
+#rightside.rightside-show .el-ring {
+  opacity: 1;
+}
+
+.el-ring__bg {
+  fill: none;
+  stroke: var(--el-hairline);
+  stroke-width: 2;
+}
+
+.el-ring__fg {
+  fill: none;
+  stroke: var(--el-sakura);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 100.53;
+  stroke-dashoffset: 100.53;
+  filter: drop-shadow(0 0 4px hsla(var(--accent-hue), 100%, 81%, 0.85));
+  transition: stroke-dashoffset 0.15s linear, stroke 0.4s var(--el-ease);
+}
+
+/* 接近底部时环变成紫→青，给出"快读完了"的暗示 */
+#rightside #go-up.is-near-bottom .el-ring__fg {
+  stroke: var(--el-mint);
+  filter: drop-shadow(0 0 5px hsla(calc(var(--accent-hue) - 110), 77%, 64%, 0.9));
+}
+
+#rightside #go-up:hover .el-ring__fg {
+  stroke: #fff;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9));
+}
+
+/* 到顶：环闭合后脉冲一下 */
+#rightside #go-up.is-at-top .el-ring {
+  animation: el-ring-pulse 0.7s var(--el-ease);
+}
+
+@keyframes el-ring-pulse {
+  0% {
+    transform: rotate(-90deg) scale(1);
+  }
+  45% {
+    transform: rotate(-90deg) scale(1.22);
+  }
+  100% {
+    transform: rotate(-90deg) scale(1);
+  }
+}
+
+/* ==========================================================================
+   7. 留言板
+   ========================================================================== */
+
+.el-guestbook-intro {
+  margin-bottom: 8px;
+}
+
+.el-guestbook-intro h2 {
+  margin-top: 0;
+}
+
+.el-guestbook-intro p {
+  color: var(--el-text-soft);
+}
+
+/* 评论容器：玻璃卡 */
+#post-comment,
+#giscus-wrap {
+  border-radius: var(--el-radius-lg);
+}
+
+#giscus-wrap {
+  min-height: 60px;
+}
+
+#giscus-wrap iframe {
+  border-radius: var(--el-radius-md);
+}
+
+/* Giscus 的 repo_id / category_id 还没填时的友好占位（由 vision.js 插入） */
+.el-giscus-placeholder {
+  padding: 24px 22px;
+  border: 1px dashed var(--el-glass-border);
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg-soft);
+  color: var(--el-text-soft);
+  font-size: 0.94em;
+  line-height: 1.9;
+}
+
+.el-giscus-placeholder strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--el-text);
+  font-size: 1.06em;
+}
+
+.el-giscus-placeholder code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: hsla(var(--accent-hue), 100%, 81%, 0.16);
+  color: var(--el-sakura-deep);
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.el-giscus-placeholder a {
+  color: var(--el-violet);
+}
+
+/* ==========================================================================
+   8. 鼠标交互
+   ========================================================================== */
+
+/* 跟随光标的玻璃环：JS 用 lerp 追赶鼠标，所以这里只负责外观。
+   只在精确指针设备上显示（CSS 再兜一层，JS 里也判了一次）。 */
+#el-cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9998;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 1.5px solid hsla(var(--accent-hue), 100%, 81%, 0.6);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 70%);
+  box-shadow: 0 0 12px hsla(var(--accent-hue), 100%, 81%, 0.4);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s var(--el-ease), width 0.3s var(--el-ease-back),
+    height 0.3s var(--el-ease-back), margin 0.3s var(--el-ease-back),
+    border-color 0.3s var(--el-ease);
+  will-change: transform;
+}
+
+body.el-cursor-on #el-cursor-ring {
+  opacity: 0.85;
+}
+
+/* 悬停到可点元素上时环收紧，给出"这里能点"的反馈 */
+body.el-cursor-on.el-cursor-hot #el-cursor-ring {
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-color: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.95);
+  box-shadow: 0 0 16px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.6);
+}
+
+@media (hover: none), (pointer: coarse) {
+  #el-cursor-ring {
+    display: none;
+  }
+}
+
+/* 点击波纹。
+   .el-ripple-host 由 JS 在生成波纹前加在目标元素上 ——
+   不预先在 CSS 里给一堆元素加 position/overflow，
+   因为 overflow: hidden 可能裁掉导航下拉菜单这类溢出内容。 */
+.el-ripple-host {
+  position: relative;
+  overflow: hidden;
+}
+
+.el-ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.75), hsla(var(--accent-hue), 100%, 81%, 0.28) 60%, transparent 72%);
+  transform: scale(0);
+  opacity: 0.9;
+  pointer-events: none;
+  animation: el-ripple-out 0.6s var(--el-ease) forwards;
+}
+
+@keyframes el-ripple-out {
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   9. 深色模式
+   ========================================================================== */
+
+[data-theme='dark'] .el-beam {
+  opacity: 0.5;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.4) 48%,
+    hsla(calc(var(--accent-hue) - 74), 100%, 72%, 0.2) 53%,
+    transparent 62%
+  );
+}
+
+[data-theme='dark'] #aside-content .card-info .avatar-img img {
+  border-color: rgba(20, 21, 38, 0.9);
+}
+
+/* 底沿折射光在深色下要收暗，否则深底玻璃的底部会泛白 */
+[data-theme='dark'] #aside-content .card-widget::after {
+  background: linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0) 28px
+  );
+}
+
+[data-theme='dark'] #article-container figure.highlight::after {
+  opacity: 0.25;
+}
+
+[data-theme='dark'] #article-container figure.highlight .highlight-tools {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
+}
+
+/* 深色下统计项 hover：底色是 accent 渐变，文字要压成深色才读得出。
+   ⚠️ 原值是写死的 #1a1b2e（hsl(240,26%,14%)，一个偏紫的近黑）。
+   这里跟色相走（-37 是 violet 家族，240 正落在那一档）——
+   色相拖到绿色系时，"绿底压紫字"会明显发脏。 */
+[data-theme='dark'] #aside-content .card-info .site-data > a:hover .headline,
+[data-theme='dark'] #aside-content .card-info .site-data > a:hover .length-num {
+  color: hsl(calc(var(--accent-hue) - 37), 26%, 14%);
+}
+
+[data-theme='dark'] .el-ripple-wave {
+  background: radial-gradient(circle, hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.7), hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.24) 60%, transparent 72%);
+}
+
+/* ==========================================================================
+   9.5 文章正文的轻量滚动进场
+   --------------------------------------------------------------------------
+   卡片用的是 custom.css 里的 .el-reveal（带 will-change）。
+   正文里的 h2 / 代码块 / 表格动辄几十个，如果都带 will-change，
+   浏览器要为每个元素单独开一个合成层 —— 长文章下这个开销很实在。
+   所以正文元素用这个不带 will-change 的版本。
+   两个类都由 site-fx.js 添加，.el-in 是共用的触发类。
+   ========================================================================== */
+
+.el-reveal-soft {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition: opacity 0.65s var(--el-ease), transform 0.65s var(--el-ease);
+}
+
+.el-reveal-soft.el-in {
+  opacity: 1;
+  transform: none;
+}
+
+html.no-fx .el-reveal-soft {
+  opacity: 1;
+  transform: none;
+}
+
+/* ==========================================================================
+   10. 响应式与性能降级
+   ========================================================================== */
+
+/* 移动端：壁纸模糊降级 + 关掉高开销效果。
+   #web_bg 的模糊是在 custom.css 里定义的，这里覆盖。 */
+@media screen and (max-width: 768px) {
+  #web_bg {
+    filter: blur(2px) saturate(1.1);
+  }
+
+  .el-beam {
+    display: none;
+  }
+
+  #aside-content .card-info .avatar-img {
+    width: 104px;
+    height: 104px;
+  }
+
+  #aside-content .card-info .avatar-img::after {
+    animation: none;
+  }
+
+  #aside-content .card-info .site-data {
+    gap: 6px;
+  }
+
+  #aside-content .card-info .card-info-social-icons {
+    gap: 8px;
+  }
+
+  #aside-content .card-info .card-info-social-icons .social-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* 移动端动画收敛，避免滚动掉帧 */
+  #aside-content .card-info .avatar-img:hover {
+    transform: none;
+  }
+}
+
+/* 省流 / 低性能设备：JS 会给 <html> 加 .no-fx（site-fx.js 的能力判定） */
+html.no-fx .el-beam {
+  display: none;
+}
+
+html.no-fx #aside-content .card-info .avatar-img::after {
+  animation: none;
+}
+
+/* 尊重系统「减少动态效果」 */
+@media (prefers-reduced-motion: reduce) {
+  .el-beam {
+    display: none;
+  }
+
+  #aside-content .card-info .avatar-img::after,
+  .el-ripple-wave,
+  #rightside #go-up.is-at-top .el-ring {
+    animation: none;
+  }
+
+  #el-cursor-ring {
+    display: none;
+  }
+}
+
+/* 不支持 backdrop-filter：退回不透明，保证可读性 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .el-beam {
+    display: none;
+  }
+
+  #aside-content .card-info .card-info-social-icons .social-icon {
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  [data-theme='dark'] #aside-content .card-info .card-info-social-icons .social-icon {
+    background: rgba(24, 25, 44, 0.95);
+  }
+
+  #page-header #site_social_icons .social-icon {
+    background: rgba(255, 255, 255, 0.85);
+  }
+}

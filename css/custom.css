@@ -1,0 +1,2365 @@
+/* ==========================================================================
+   EndlessLoop · Butterfly 定制样式
+   --------------------------------------------------------------------------
+   1.  设计令牌 (Design Tokens)
+   2.  基础排版
+   3.  页面背景层（极光 / 网格 / 光晕）
+   4.  顶部导航栏
+   5.  Banner（首页 / 内页 / 文章页）
+   6.  首页文章卡片
+   7.  侧边栏卡片
+   8.  文章详情页
+   9.  分页 / 按钮 / 标签
+   10. 表单控件
+   11. 滚动条 / 页脚 / 右下角按钮
+   12. 动画与关键帧
+   13. 深色模式
+   14. 响应式与性能降级
+
+   性能约定：
+   - 玻璃模糊半径控制在 12px，backdrop-filter 会随背景变化重算，半径越大越贵
+   - 动效只用 transform / opacity，避免触发重排
+   - 所有动画在 prefers-reduced-motion 或低性能设备上自动关闭
+   ========================================================================== */
+
+/* ==========================================================================
+   1. 设计令牌
+   ========================================================================== */
+
+:root {
+  /* 主色相：整站唯一的颜色输入。拖动它，全站跟着换色。
+     ⚠️ 必须定义在这里（:root），不能只靠 JS 挂到 <html> 上。
+     原因是 IACVT（invalid at computed-value time）：由自定义属性驱动的值一旦失效，
+     判定发生在"计算值期"而非"解析期"，结果是 unset —— **不会**回退到上一条声明。
+     所以 JS 只负责覆写它的值、从不负责定义它：JS 挂了 / 被 CSP 拦了 / 用户禁了 JS，
+     最坏也只是色相写死成默认值，而不是整站颜色崩成 unset。 */
+  --accent-hue: 286;
+
+  /* 主色板：全部从 --accent-hue 推导。
+     四个色的色相偏移锁在一个 110° 的冷色弧里（紫 → 蓝紫 → 蓝 → 青）。
+     为什么是 110° 而不是原色的 166°：166° 跨度下滑块拖到 171 时，
+     薄荷会被转成红色，整屏变成"青→黄绿→橙→红"的彩虹；110° 则永远邻近和谐。
+     下面的 S/L 是原色反解出来的实测值（不是目测）。
+
+     默认色相选 286（紫）而不是 336（原来的粉）：286 下四个令牌恰好落回原色附近 ——
+       violet #9a89fa ≈ 原 hsl(calc(var(--accent-hue) - 37), 92%, 76%)、sky #70b3ff ≈ 原 hsl(calc(var(--accent-hue) - 74), 100%, 72%)、mint #5deae0 ≈ 原 hsl(calc(var(--accent-hue) - 110), 77%, 64%)
+     （实测偏差都在几个色阶内），只有主色 sakura 从粉 hsl(var(--accent-hue), 100%, 81%) 变成兰紫 #e89eff。
+     也就是说换成 286 之后整站气质基本保留，只有"主色"这一件事换了颜色，
+     是四个候选里改动面最小的一个。
+
+     用逗号语法的 hsl()/hsla()、不用空格语法：空格语法是 CSS Color 4 新增的，
+     老浏览器不认识时整条声明会被丢弃（元素直接丢颜色，比"颜色不对"严重）。 */
+  --el-sakura: hsl(var(--accent-hue), 100%, 81%);
+  --el-sakura-deep: hsl(var(--accent-hue), 100%, 72%);
+  --el-violet: hsl(calc(var(--accent-hue) - 37), 92%, 76%);
+  --el-sky: hsl(calc(var(--accent-hue) - 74), 100%, 72%);
+  --el-mint: hsl(calc(var(--accent-hue) - 110), 77%, 64%);
+
+  /* 「当作文字用的强调色」。上面四个令牌都是 L 72~81% 的亮色，
+     当背景、描边、发光都很好，但当**文字**（小字号、浅底）对比度不够 ——
+     81% 亮度的粉写在白玻璃上基本读不清。
+     所以另开一档：同样跟色相走，但把亮度压到能读的区间。
+     需要"强调色的文字"时用它，不要硬用 --el-sakura。 */
+  --el-accent-ink: hsl(var(--accent-hue), 62%, 42%);
+
+  /* 主渐变引用主色本身，所以改上面四个令牌会真的带着渐变一起变。
+     ⚠️ 全站带透明度的调色板颜色**一律写成 hsla() 字面量**（本文件里几十处都这样），
+     而不是 color-mix(in srgb, var(--el-sakura) 50%, transparent)：后者一旦不被支持，
+     整条 background-image 会被判为非法值丢弃 —— 不是降级成不透明，是整个声明消失。
+     而 hsla() 从 CSS3 起就有，支持面近乎无限，calc() 在色相槽位里同样可用，功能等价。
+     上面 --el-grad-main 能用 var() 是因为它取的正好都是不透明色。 */
+  --el-grad-main: linear-gradient(
+    120deg,
+    var(--el-sakura) 0%,
+    var(--el-violet) 50%,
+    var(--el-sky) 100%
+  );
+
+  /* 玻璃拟态 */
+  --el-glass-bg: rgba(255, 255, 255, 0.55);
+  --el-glass-bg-soft: rgba(255, 255, 255, 0.38);
+  --el-glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --el-glass-border: rgba(255, 255, 255, 0.65);
+  --el-glass-border-dim: rgba(255, 255, 255, 0.35);
+  --el-glass-blur: 12px;
+
+  /* 液态玻璃三件套（Apple Vision Pro 观感的三个来源）：
+     sheen = 左上到右下的镜面高光渐变
+     inset = 上沿内发光，制造"玻璃有厚度"的错觉
+     edge  = 边缘折射亮线，只在悬停/激活时点亮 */
+  --el-liquid-sheen: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  --el-liquid-inset: rgba(255, 255, 255, 0.5);
+  --el-liquid-edge: rgba(255, 255, 255, 0.92);
+
+  /* 圆角 */
+  --el-radius-xl: 26px;
+  --el-radius-lg: 20px;
+  --el-radius-md: 14px;
+  --el-radius-sm: 9px;
+
+  /* 阴影：也带色偏、不跟中性走。S/L 对齐原 rgba(38, 40, 74, *) 的观感，只把色相接过来。
+     ⚠️ --el-shadow-glow 浅色在这里、深色在文件末尾的 [data-theme='dark'] 里**各写了一遍**，
+     改一处必须同时改另一处，否则"深色下光晕还是老颜色"。 */
+  --el-shadow-1: 0 2px 10px hsla(var(--accent-hue), 25%, 25%, 0.05);
+  --el-shadow-2: 0 8px 26px hsla(var(--accent-hue), 25%, 25%, 0.09);
+  --el-shadow-3: 0 20px 46px hsla(var(--accent-hue), 25%, 25%, 0.15);
+  --el-shadow-glow: 0 14px 38px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.28);
+
+  /* 正文三档：同样染色相。原值 #1f2440 / #5a5f7d / #8b90a8 反解出来的色相都在 230 上下、
+     饱和度 14~35% —— 本来就是"带偏的中性色"，只是偏的方向写死在蓝紫。
+     这里接到 --accent-hue 上：正文用 alethein 的 23%/15% 档（比原值略深、略收饱和度），
+     次级与弱化沿用原亮度，饱和度收到 16% / 14%。
+     ⚠️ 深色块里也定义了这三个，改这里要同步改那边。 */
+  --el-text: hsl(var(--accent-hue), 23%, 15%);
+  --el-text-soft: hsl(var(--accent-hue), 16%, 42%);
+  --el-text-mute: hsl(var(--accent-hue), 14%, 60%);
+  /* 分割线：alethein 的 --line 档位。比原来的 rgba(38,40,74,.08) 略明显一点，
+     这是刻意的 —— "能看见的细线"是它那套观感的组成部分。 */
+  --el-hairline: hsla(var(--accent-hue), 20%, 79%, 0.5);
+
+  /* 内容区底色。**两个消费者必须共用这一个值**，否则首屏会露出一条接缝：
+       1) #web_bg 的 background-color（内容区的底）
+       2) .el-hero-waves 的 SVG fill（首屏底部的波浪，要"长"成内容区的样子）
+     波浪是平涂的，底是带极光的，所以只能力保**底部那一段**的颜色一致 ——
+     这也是首页必须把壁纸撤掉的原因：图是没法用平涂色对齐的。
+     alethein 的 --bg 就是这个角色（hsl(286 30% 97%)），这里沿用同一档亮度。
+     ⚠️ 深色块里也定义了它，改这里要同步改那边。 */
+  --el-surface: hsl(var(--accent-hue), 30%, 96%);
+
+  --el-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --el-ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ---- 覆盖 Butterfly 自带变量（比堆 !important 干净） ---- */
+  --card-bg: var(--el-glass-bg);
+  --card-box-shadow: var(--el-shadow-2);
+  --card-hover-box-shadow: var(--el-shadow-3);
+  --card-meta: var(--el-text-mute);
+  /* 按钮三件套：--btn-bg 是常态底色，--btn-color 是文字色，
+     --btn-hover-color 是悬停底色。两个坑：
+     1) 悬停时文字色仍然是 --btn-color，所以悬停底色不能也是白色，否则白底白字；
+     2) shuoshuo 模板里有 `border: 1px solid var(--btn-bg)`，
+        渐变在 border 里是非法值，整条声明会被丢弃，所以这里必须是纯色。 */
+  --btn-bg: var(--el-sakura);
+  --btn-color: #fff;
+  --btn-hover-color: var(--el-violet);
+  --pseudo-hover: var(--el-sakura);
+  --scrollbar-color: var(--el-sakura);
+  /* 标题遮罩：压在 hero 图上的一层暗色。它实测是 hsla(245, 37%, 13%) ——
+     看着像"中性黑"，其实是紫。凡是这种"低亮度 + 三四十饱和度"的颜色都要跟着色相转：
+     不转的话，色相拖到绿色系时会出现「绿渐变 + 紫压暗」，直接显脏。
+     对照：本文件别处的 rgba(12, 12, 30, *) 实测 L=8%、肉眼即黑，那些保持中性不转。 */
+  --mark-bg: hsla(var(--accent-hue), 37%, 13%, 0.32);
+  --headline-presudo: var(--el-sakura);
+
+  /* ⚠️ 语义色：**刻意不跟色相走**，故意写成固定值。
+     报错文字必须是红的 —— 色相滑块拖到绿色系时，"错误提示"跟着变绿会直接误导用户。
+     凡是"颜色本身承载语义"的地方（错误 / 成功 / 警告 / 危险）都归这一类：
+     抽成令牌是为了集中管理，但**不要**把它们改成 var(--accent-hue) 派生。
+     （live2d-init.js:127 的 errorColor 是同一类，那边因为看板娘已下架所以留着字面量。） */
+  --el-danger: #e0567a; /* 浅色：music.css 播放器错误提示 */
+  --el-danger-dark: #ff8fb0; /* 深色：同上 */
+
+  /* 上下篇导航的占位底色。主题给的是它的主色（粉），而它在这块的表现是「脏褐」——
+     因为 .pagination-related 是纯黑底、.cover 只有 opacity: .4，
+     两层相乘后 0.4 × 粉 = rgb(102,63,78)，实测就是这个色。
+     （"粉"是主题构建期的主题色，由 site 级过滤器改写成色相派生表达式，
+       见 scripts/theme-color-var.js —— 这里不写十六进制是为了不在源码里留死颜色。）
+     这里换成站内主渐变，并叠一层压暗：白字在亮粉/亮蓝上对比度不足
+     （已渲图确认），压暗后文字才读得清。
+     令牌值可以放多层渐变，因为两个消费者用的都是 background 简写：
+       pagination.pug:24      .cover(style=`background: ${direction.cover || 'var(--default-bg-color)'}`)
+       related_post.js:76     `<div class="cover" style="background: ${cover}"></div>`
+     那层压暗实测是 hsla(255, 44%, 14%)，和 --mark-bg 一样属于"看着像黑、其实是紫"，
+     必须跟着色相转 —— 否则它是直接叠在 --el-grad-main 上的，色相一换就变成两层打架。 */
+  --default-bg-color: linear-gradient(120deg, hsla(var(--accent-hue), 44%, 14%, 0.42), hsla(var(--accent-hue), 44%, 14%, 0.42)),
+    var(--el-grad-main);
+
+  /* ---- 主题的两个"文字"变量，同样接上色相 ----
+     --font-color（#4c4948）与 --text-highlight-color（#1f2d3d）是 Butterfly 自己的
+     正文色与强调文字色，定义在编译产物 css/index.css 的 :root 里。
+     它们在本站**不是**中性灰，而是"看起来像灰、其实带偏"的暖灰/蓝灰：
+       #4c4948 → h=12 s=3%   #1f2d3d → h=217 s=32%
+     全站 28 处消费 --font-color、4 处消费 --text-highlight-color，
+     其中就有 `h1..h6`（index.css:1790）与 `.article-title`（:2775）。
+     不接色相的话，色相一拖就会看见「正文是绿的、标题还是蓝灰」——
+     实测在色相 171 下标题确实是 #1F2D3D，而段落已经是 hsl(171 23% 15%)。
+     接手方式就两行：同特异性下 custom.css 排在 index.css 之后，后写的赢。
+     ⚠️ 深色块里也有这两个，改这里必须同步改那边（见文件末尾的 [data-theme='dark']）。
+     另外 .read-mode 与 [data-theme='dark'] .read-mode 会重定义它们为中性值 ——
+     阅读模式本就该素净，那是刻意的，不用管。 */
+  --font-color: hsl(var(--accent-hue), 18%, 29%);
+  --text-highlight-color: hsl(var(--accent-hue), 26%, 15%);
+}
+
+/* ==========================================================================
+   2. 基础排版
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   拉丁字体：Nunito（可变字重 400–900，单文件）
+   --------------------------------------------------------------------------
+   本地自托管，不走 CDN。文件 source/fonts/nunito-latin-var.woff2（39 KB），
+   是 Google Fonts 的 **latin 子集**，从 v32 的 URL 一次性抓下来的；
+   升级/换字体时重新抓即可（见文件头注释里的抓取方式）。
+
+   为什么只给拉丁：中文字体体积是另一个量级（MiSans 全量 10MB+），
+   而中文本身有成熟的系统栈（微软雅黑 / 苹方 / 鸿蒙），本地自托管不划算。
+   所以这里靠 unicode-range 划清边界：下面这段 unicode-range 覆盖的是
+   基本拉丁 + 常用标点，**不含 CJK**；落到中文时浏览器自动往字体栈下一项走，
+   也就是系统中文栈。两边互不干扰、都不缺字。
+
+   可变字重：一个文件覆盖 400–900，靠 font-weight 范围声明。
+   不支持可变字体的老浏览器会拿到默认字重，属于可接受的降级。 */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap; /* 字体没到时先用系统字体渲染，避免文字空白 */
+  src: url('/fonts/nunito-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+body {
+  /* Nunito 排在最前，但它只覆盖拉丁 —— 中文由 unicode-range 让给后面的系统栈。
+     所以这一行同时决定了"英文长什么样"和"中文长什么样"，不需要两套规则。 */
+  font-family: 'Nunito', 'Microsoft YaHei', 'PingFang SC', 'HarmonyOS Sans SC',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--el-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: hsla(var(--accent-hue), 100%, 81%, 0.32);
+  color: var(--el-text);
+}
+
+a {
+  transition: color 0.25s var(--el-ease);
+}
+
+/* 渐变文字工具类 */
+.el-grad-text {
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* 滚动进场：JS 加 .el-in 触发，未启用 JS 时用 :root 上的 .no-fx 兜底 */
+.el-reveal {
+  opacity: 0;
+  transform: translate3d(0, 26px, 0);
+  transition: opacity 0.7s var(--el-ease), transform 0.7s var(--el-ease);
+  will-change: opacity, transform;
+}
+
+.el-reveal.el-in {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+html.no-fx .el-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+/* ==========================================================================
+   3. 页面背景层
+   ========================================================================== */
+
+/* 壁纸做柔焦：二次元插画做背景时，模糊能把它压成"氛围底"，
+   内容层（玻璃卡片）再叠上去才有前后景深。
+   transform: scale 是必须的 —— 模糊会把边缘往外"吃掉"一圈，
+   不放大就会在四周露出底色白边。 */
+#web_bg {
+  /* 内容区底色：原来的 #eef1fb 实测是 hsl(226, 62%, 96%) —— 色相 226、饱和度高达 62%，
+     是最显眼的一处"写死的蓝紫"。这里接上 --accent-hue，并把饱和度收到 30%：
+     色偏仍然在（整屏没有一个中性灰，这是 alethein 那套观感的根基），
+     但不再和一个固定的蓝紫绑定。
+     走 --el-surface 而不是就地写值：首页底部的波浪要用同一个值平涂，
+     两处各写一份就一定会飘。 */
+  background-color: var(--el-surface);
+  filter: blur(4px) saturate(1.15);
+  transform: scale(1.05);
+  overflow: hidden;
+}
+
+/* ---- 首页：壁纸从内容区退出（设计决策 #5「图只在首屏」） ----
+   #web_bg 上的图是**内联 style**（layout.pug:17 `style=getBgPath(theme.background)`），
+   内联优先级高于样式表，所以必须 !important。
+   元素本身不能动（vision.js 的 .el-beam 挂在它里面，且 ::after 的极光/网格还在），
+   只撤掉图。
+   为什么这件事归在 hero 这一段做，而不是留到"内容区改造"：
+   波浪是**平涂**的，内容区是"壁纸 + 极光"，两者永远对不齐 —— 只要图还在，
+   首屏底部就必然有一条看得见的接缝。要么现在撤图，要么波浪白做。
+   撤图同时解决了另一个既有问题：内容区的玻璃卡片原来压在粉色壁纸上，
+   色相拖到非粉区间时文字对比度会掉下来。
+   :has() 不支持时整条规则失效，回退成今天的样子（有图、波浪色略偏），不会崩。 */
+body:has(#page-header.full_page) #web_bg {
+  background-image: none !important;
+}
+
+/* 深色下主题还有一层 rgba(0,0,0,.7) 的压暗（darkmode.styl:87 `#web_bg:before`），
+   它是为"压暗壁纸"准备的。首页已经没有壁纸了，再压一遍只会把底色压成灰
+   （实测 hsl(hue 30% 96%) × 0.3 ≈ #4a494a，比主题深色底还亮），
+   于是"波浪色"和"页面底"又会分家。
+   所以首页直接接管底色、并取消这层压暗 —— 底色的最终值完全可控。
+   两处都限定在首页：内页（壁纸还在）仍然需要主题那层压暗。 */
+[data-theme='dark'] body:has(#page-header.full_page) #web_bg {
+  background-color: var(--el-surface);
+}
+
+[data-theme='dark'] body:has(#page-header.full_page) #web_bg::before {
+  background-color: transparent;
+}
+
+/* 极光 + 科技网格：叠在背景图上、内容之下
+   ⚠️ 只用 ::after，绝不能用 ::before ——
+   Butterfly 的深色模式把 #web_bg:before 当作暗化遮罩，占用会破坏深色模式。
+   网格线放在最前面（CSS 里第一层画在最上面），压住极光，形成细密科技底纹。 */
+#web_bg::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: 0.75;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    radial-gradient(38% 44% at 18% 22%, hsla(var(--accent-hue), 100%, 81%, 0.5), transparent 68%),
+    radial-gradient(34% 40% at 82% 18%, hsla(calc(var(--accent-hue) - 74), 100%, 72%, 0.45), transparent 66%),
+    radial-gradient(42% 46% at 68% 84%, hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.45), transparent 70%),
+    radial-gradient(30% 36% at 32% 88%, hsla(calc(var(--accent-hue) - 110), 77%, 64%, 0.34), transparent 68%);
+  background-size: 46px 46px, 46px 46px, auto, auto, auto, auto;
+  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  animation: el-aurora 26s ease-in-out infinite alternate,
+    el-grid-pan 40s linear infinite;
+  will-change: transform;
+}
+
+/* 粒子画布：由 site-fx.js 注入 */
+#fx-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   4. 顶部导航栏 —— 居中悬浮胶囊
+   --------------------------------------------------------------------------
+   胶囊画在 #nav::before 上，**#nav 自身不画任何东西**。
+   动这个区块前必须先读下面两条，它们都是实测出来的、不是理论风险：
+
+   ① `position` / `top` / `height` / `width` 一个都不能动。
+      主题 `main.js:23` 的 `adjustMenu` 用
+      `headerContentWidth > $nav.offsetWidth - 120` 决定菜单是否折成汉堡 ——
+      动 #nav 的盒宽就等于动菜单折叠阈值。
+      （改 `padding` 不影响 `offsetWidth`，因为 #nav 是 `width:100%` + border-box，
+        实测 padding 36px 时 offsetWidth 仍等于视口宽 1422，所以 padding 安全。
+        改菜单项自身的宽高会被 `menusWidth` 如实测到 —— 那是自洽的，也安全。）
+
+   ② `#nav` 及其祖先不得出现 `transform` / `will-change: transform` / 非 1 的 `opacity`。
+      它们会生成 backdrop root，切断后代（含伪元素）的 backdrop-filter 采样。
+      症状很具体：页面顶部玻璃正常，滚过 56px 变成 nav-fixed 后玻璃消失、只剩半透明色块。
+      （主题给 #nav 的 `opacity: 0 → .show 时 1` 是入场动画，落定后为 1，不触发这条。）
+   ========================================================================== */
+
+#nav {
+  /* 胶囊几何只在这里定义一次，伪元素与内容内缩都读它 */
+  --el-nav-cap-w: min(calc(100% - 2rem), 75rem);
+  --el-nav-cap-h: 3rem;
+  --el-nav-cap-x: max(1rem, calc((100% - 75rem) / 2));
+  --el-nav-cap-in: calc(var(--el-nav-cap-x) + 1.15rem);
+  /* 比 --el-glass-blur(12px) 重一档：胶囊是浮在图上的，模糊不够就会显脏 */
+  --el-nav-blur: 18px;
+
+  background: none !important;   /* 压掉主题 nav-fixed 态的 rgba(255,255,255,.7) */
+  border-bottom: 0;
+  box-shadow: none;
+  justify-content: center;       /* #menus 真正居中；品牌与按钮绝对定位、不占 flex 流 */
+}
+
+#nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--el-nav-cap-w);
+  height: var(--el-nav-cap-h);
+  margin: auto;                  /* inset:0 + margin:auto —— 不用 transform 的居中 */
+  z-index: -1;                   /* ::before 是定位元素，不给负层级就会盖住菜单文字 */
+  /* 边框用 --el-hairline 而不是 --el-glass-border：
+     后者是白色（rgba(255,255,255,.65)），在首屏粉图上没问题，但滚到内容区之后
+     是"白边压白底"，胶囊的轮廓会整个消失。--el-hairline 是带色相的浅灰紫，
+     浅色下在两种背景上都能交代出边缘。深色下反过来 —— 那里需要的是白色描边。 */
+  border: 1px solid var(--el-hairline);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, var(--el-liquid-inset), transparent 58%),
+    var(--el-glass-bg);
+  backdrop-filter: blur(var(--el-nav-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--el-nav-blur)) saturate(170%);
+  /* 第三条阴影带色相 —— 这是原来那条全宽 --el-grad-main 下划线的替代物：
+     下划线是画在 #nav 全宽上的，胶囊化之后它会从圆角两端支棱出去，
+     改由"accent 色晕"承担同一个"这条东西是活的"的职责，且跟着滑块走。 */
+  box-shadow:
+    var(--el-shadow-2),
+    inset 0 1px 0 var(--el-liquid-inset),
+    0 10px 30px hsla(var(--accent-hue), 62%, 48%, 0.14);
+  pointer-events: none;
+  transition: box-shadow 0.3s var(--el-ease);
+}
+
+/* 品牌钉在胶囊左内缩处。绝对定位 → 不是 flex item，`flex: 1` 自然失效，
+   也因此完全不影响 adjustMenu 量到的 headerContentWidth */
+#nav #blog-info {
+  position: absolute;
+  left: var(--el-nav-cap-in);
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+}
+
+#nav .site-name {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: filter 0.3s var(--el-ease);
+}
+
+#nav .site-name:hover {
+  filter: brightness(1.15) drop-shadow(0 0 10px hsla(var(--accent-hue), 100%, 81%, 0.55));
+}
+
+#nav #blog-info .site-icon {
+  border-radius: 30%;
+}
+
+/* --------------------------------------------------------------------------
+   导航文字色：**必须显式接管**，不能留给主题的 `--light-grey`。
+   主题那条值实测是 `rgb(238, 238, 238)` —— 近乎纯白，是按"浮在深色 banner 上"
+   设计的；本站在 #nav 上画了一层浅色玻璃，白字直接糊掉。
+   改读站点的 --el-text 系，深浅两态各自有值，且都带色相偏。
+   -------------------------------------------------------------------------- */
+#nav #menus .menus_item > a,
+#nav #menus .site-page,
+#nav #toggle-menu .site-page,
+#nav #search-button .site-page {
+  color: var(--el-text-soft);
+}
+
+/* 菜单项：hover 是 accent 药丸底。
+   胶囊内部再画一条渐变下划线会显得脏，所以撤掉原来的 translateY + ::after 下划线，
+   改为"药丸底 + 文字变深"这一对。`.menus_item` 的左内边距从 14px 收到 4px，
+   让位给 <a> 自己撑开药丸（总宽只多 ~12px/项，adjustMenu 会如实量到）。 */
+#nav #menus .menus_item {
+  padding: 0 0 0 4px;
+}
+
+#nav #menus .menus_item > a {
+  display: inline-block;
+  padding: 0.4rem 0.72rem;
+  border-radius: 999px;
+  transition: background 0.28s var(--el-ease), color 0.28s var(--el-ease);
+}
+
+#nav #menus .menus_item > a:hover {
+  color: var(--el-text);
+  background: hsla(var(--accent-hue), 100%, 81%, 0.2);
+}
+
+/* 键盘可达性：药丸底是唯一的 hover 提示，所以焦点态要等效可见 */
+#nav #menus .menus_item > a:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 1px;
+}
+
+#nav #toggle-menu .site-page,
+#nav #search-button .site-page {
+  transition: transform 0.3s var(--el-ease-back), color 0.28s var(--el-ease);
+}
+
+#nav #toggle-menu:hover .site-page {
+  transform: rotate(90deg);
+}
+
+#nav #search-button:hover .site-page {
+  transform: scale(1.18);
+}
+
+/* --------------------------------------------------------------------------
+   导航右侧的深浅色开关
+   JS 注入（appearance.js initNavTheme），**不是**把主题的 #darkmode 搬过来 ——
+   主题用的是 `#rightside` 上的事件委托（main.js:738 `e.target.closest('[id]')`），
+   把节点搬出 #rightside 就出了冒泡路径，深色切换会直接失效。
+   所以这里放的是自己的按钮，点击时转发给主题节点，逻辑零重复。
+   -------------------------------------------------------------------------- */
+#nav .el-nav-btn {
+  position: absolute;
+  right: var(--el-nav-cap-in);
+  top: 0;
+  bottom: 0;
+  margin: auto 0;                /* 定高 + inset 上下 + margin:auto —— 无 transform 居中 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: 50%;
+  background: var(--el-glass-bg);
+  color: var(--el-text-soft);
+  font-size: 0.92rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.28s var(--el-ease), color 0.28s var(--el-ease),
+    border-color 0.28s var(--el-ease), transform 0.28s var(--el-ease-back);
+}
+
+#nav .el-nav-btn:hover {
+  transform: scale(1.08);
+  color: hsl(var(--accent-hue), 72%, 46%);
+  border-color: hsla(var(--accent-hue), 100%, 81%, 0.55);
+  background: hsla(var(--accent-hue), 100%, 81%, 0.2);
+}
+
+#nav .el-nav-btn:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+[data-theme='dark'] #nav::before {
+  border-color: var(--el-glass-border);
+}
+
+/* 两个图标都渲染，按主题二选一（避免 JS 去改 innerHTML） */
+#nav .el-nav-btn .fa-sun {
+  display: none;
+}
+
+[data-theme='dark'] #nav .el-nav-btn .fa-sun {
+  display: inline-block;
+}
+
+[data-theme='dark'] #nav .el-nav-btn .fa-moon {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   窄屏（≤60rem）：品牌与按钮回到 flex 流、菜单靠右。
+   居中菜单在中等宽度会和品牌撞在一起 —— 此时把布局还原成主题原本的
+   "品牌吃掉剩余空间、菜单贴右"，碰撞就不可能发生。
+   60rem 之上才有"真居中"；768px 以下主题本来就会折成汉堡，落在这一支里。
+   -------------------------------------------------------------------------- */
+@media screen and (max-width: 60rem) {
+  #nav {
+    justify-content: flex-start;
+    /* 让内容内缩跟着胶囊走：胶囊每侧 6px + 这里 24px ≈ 距胶囊边 18px，
+       与宽屏那套（胶囊内缩 + 1.15rem）观感一致。
+       主题在 ≤768px 另有一条 `padding: 0 16px`，本文件后加载，这条压得住它 ——
+       原先沿用 16px 时，品牌离胶囊左缘只剩 10px，950px 上更只剩 7.6px，太挤。 */
+    padding: 0 1.5rem;
+  }
+
+  #nav::before {
+    width: calc(100% - 0.75rem);
+  }
+
+  #nav #blog-info {
+    position: static;
+    flex: 1;
+    display: block;
+    min-width: 0;                /* 配合主题的 .limit-one-line，长站名才肯省略号 */
+  }
+
+  #nav .el-nav-btn {
+    position: static;
+    flex: 0 0 auto;
+    margin: 0 0 0 0.4rem;
+  }
+}
+
+/* 不支持 backdrop-filter 时不透明兜底：胶囊绝不能是"全透明 + 白字" */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #nav::before {
+    background: var(--el-surface);
+    border-color: var(--el-hairline);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #nav .el-nav-btn,
+  #nav .el-nav-btn:hover {
+    transform: none;
+  }
+}
+
+/* 搜索弹层 */
+#search-dialog {
+  border-radius: var(--el-radius-lg);
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid var(--el-glass-border);
+  box-shadow: var(--el-shadow-3);
+}
+
+/* ==========================================================================
+   5. Banner
+   --------------------------------------------------------------------------
+   全站统一背景：让 #web_bg 成为唯一的背景来源。
+   --------------------------------------------------------------------------
+   此前页面顶部会「上下分成两张图」（顶部 400px 一张粉图、下面一张紫图），
+   那是三个原因叠出来的，必须一起处理，只修其中一两个都还会留缝：
+     1) header 自己的内联 background-image = banner.webp —— 它是不透明的，
+        把身后那一段 #web_bg 完全挡住；
+     2) 主题在 #page-header 上的兜底底色 background-color（$light-blue，
+        本站编译成 hsl(var(--accent-hue), 100%, 81%)）。这条最容易漏：只去掉 background-image，
+        会露出一整条纯粉，比原来更难看；
+     3) 本文件下面那两层遮罩原本都是「整块」的，底边正好收在 header 高度处，
+        于是 400px 位置留下一条硬边（详见各自注释）。
+   图片是通过内联 style 注入的（themes/butterfly/layout/includes/header/index.pug），
+   内联优先级高于样式表，所以必须 !important 才压得住。
+   ========================================================================== */
+
+#page-header {
+  overflow: hidden;
+  background-image: none !important;
+  background-color: transparent;
+}
+
+/* 装饰层：渐变洗色 + 科技网格（z-index 0，文字层提到 1）
+   末段必须是全透明 —— 原来这里是 rgba(12, 12, 30, 0.5)，底端 50% 黑，
+   正是 400px 处那条暗边最直接的来源。 */
+#page-header:not(.not-top-img)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.2) 0%, hsla(var(--accent-hue), 100%, 81%, 0.1) 45%, rgba(12, 12, 30, 0) 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 62px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 62px);
+  /* mask 让整层（连同网格线）在底边之前就淡尽。
+     不加的话网格线会在 header 底边被硬切一刀，又是一条缝。 */
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
+}
+
+/* 标题遮罩：主题原本是在整块 header 上盖一层纯色 var(--mark-bg)，
+   矩形就是矩形，底边同样是硬台阶。改成向下淡出即可消除，同时保住标题
+   在照片背景上的可读性。
+   这里用 var(--mark-bg) 而不是写死颜色，是为了自动跟随亮/暗两套值
+   （亮 rgba(22,20,44,.32) / 暗 rgba(8,8,20,.5)，见本文件 97 与 1087 行）。 */
+#page-header:not(.not-top-img)::before {
+  z-index: 0;
+  background: linear-gradient(180deg, var(--mark-bg) 0%, transparent 100%);
+}
+
+#page-header #site-info,
+#page-header #page-site-info,
+#page-header #post-info,
+#page-header #scroll-down,
+#page-header .title-seo {
+  z-index: 1;
+}
+
+/* 首页大标题 */
+#page-header #site-title {
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-shadow: 0 4px 24px rgba(12, 12, 30, 0.45), 0 0 60px hsla(var(--accent-hue), 100%, 81%, 0.35);
+  animation: el-title-in 1s var(--el-ease) both;
+}
+
+/* 打字机副标题 */
+#page-header #site-subtitle,
+#page-header #subtitle {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  letter-spacing: 1.6px;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(12, 12, 30, 0.6), 0 0 24px hsla(calc(var(--accent-hue) - 74), 100%, 72%, 0.5);
+  animation: el-fade-up 1s 0.25s var(--el-ease) both;
+}
+
+/* 光标闪烁 */
+#subtitle .typed-cursor,
+.typed-cursor {
+  color: var(--el-sakura);
+  text-shadow: 0 0 12px var(--el-sakura);
+}
+
+#page-header #site_social_icons .social-icon {
+  transition: transform 0.35s var(--el-ease-back), filter 0.35s var(--el-ease);
+}
+
+#page-header #site_social_icons .social-icon:hover {
+  transform: translateY(-5px) scale(1.22);
+  filter: drop-shadow(0 0 12px hsla(var(--accent-hue), 100%, 81%, 0.9));
+}
+
+/* 下滑箭头 */
+#scroll-down .scroll-down-effects {
+  color: #fff;
+  filter: drop-shadow(0 0 10px hsla(calc(var(--accent-hue) - 74), 100%, 72%, 0.9));
+}
+
+/* 内页标题 */
+#page-header.not-home-page #page-site-info #site-title {
+  animation: el-fade-up 0.8s var(--el-ease) both;
+}
+
+/* 文章页标题 */
+#page-header.post-bg #post-info .post-title {
+  text-shadow: 0 3px 20px rgba(12, 12, 30, 0.5);
+  animation: el-title-in 0.9s var(--el-ease) both;
+}
+
+/* 无 Banner 时的页面标题 */
+#page-header.not-top-img .title-seo {
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==========================================================================
+   5b. 首页满屏 hero
+   --------------------------------------------------------------------------
+   把原来的「400px 顶栏」升级成「一整屏首屏」。三个必须写对的点：
+
+   1) 高度来自 `index_top_img_height: 100vh`（配置里唯一开放的 hero 高度入口；
+      内页 .post-bg / .not-home-page 在主题源码里写死 400px，只能 CSS 覆盖，留阶段 6）。
+      这里再补一层 svh：移动端地址栏收放时 vh 会跳，svh 取"能保证的那个高度"。
+      两者取 max 是为了宽屏上别把首屏压得太扁 —— 本站 hero 图是 1920×699（2.75:1），
+      首屏只要比 54vw 矮，图就会被压成一条。
+
+   2) #site-info 从 absolute 改成 static，靠父级 flex 居中。
+      ⚠️ **绝不能用 top:50% + transform: translateY(-50%) 居中** ——
+      那条 transform 会让 #site-info 成为 backdrop root，把它自己身上（以及
+      任何后代）的 backdrop-filter 采样切断，玻璃卡会直接退化成半透明色块。
+      同一个原理在 appearance.css 的面板注释里记了一次（面板因此挂在 <body> 下）。
+      flex 列居中不用 transform，是这个位置唯一安全的居中方式。
+
+   3) 三个装饰层（图 / 遮罩 / 波浪）都是 **JS 注入的真实元素**，不是伪元素 ——
+      #page-header 的两个伪元素已经被占满了：
+        ::before 主题的 --mark-bg 遮罩（mask.header: true）
+        ::after  本文件第 5 节的洗色 + 科技网格
+      注：::before 那层现在压在图**下面**（装饰层是不透明的），对首页已经不可见，
+      它仍然在为内页（.post-bg / .not-home-page）和"JS 没跑"的回退态工作。
+
+   层级分配（每一层都显式给 z-index，不靠 DOM 顺序碰运气）：
+      ::before(0) → .el-hero-media(0) → ::after(0) → .el-hero-scrim(1)
+      → .el-hero-waves(2) → 文字层(3) → #nav(90，主题自己的值，不动)
+   ========================================================================== */
+
+#page-header.full_page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* 上下留出让位：上面是固定导航（60px）、下面是波浪（7.5rem）。
+     没有这层 padding 时卡片会一直顶到波浪上，而且在矮屏上还会被
+     #page-header 的 overflow: hidden 裁掉标题。
+     box-sizing 是 border-box（主题全局设的），所以这两段算在 100svh 里面。 */
+  padding: 4.5rem 0 7.5rem;
+}
+
+/* svh 是渐进增强：不支持的浏览器只丢掉这一条，高度仍然是配置给的 100vh。
+   这比反过来写（vh 打底、svh 覆盖）更稳 —— 那种写法在支持 svh 的机器上
+   会得到"100svh 与 min-height 的 100svh 打架"的无意义状态。
+
+   ⚠️ 这里**刻意没有**照抄 alethein 的 `min-height: max(100svh, 54vw)`。
+   那条公式兜的是"窗口太宽太矮时，用 contain 的窄图会上下留黑边"——
+   它的首页主图是 contain + translateY(-11%)，确实会留边。
+   我们的主图是 object-fit: cover，只会裁、不会留边，宽高比不是问题；
+   照抄反而会在超宽屏上出事：视口宽高比超过 1.85 时 54vw 就大过 100svh，
+   2560×1080 上首屏会被撑到 1382px —— 一个"比屏幕还高的满屏"，很难看。
+
+   真正需要兜底的是**内容**不是图片：卡片实测 302px，加上下留白 192px 共约 494px。
+   取 34rem(544px) 留一点余量：矮窗口下首屏会比视口高一点、出现滚动条，
+   这比让 overflow: hidden 把标题裁掉好。 */
+@supports (height: 100svh) {
+  #page-header.full_page {
+    height: 100svh;
+    min-height: 34rem;
+  }
+}
+
+/* 装饰层对文字层让路：整块 hero 只有卡片和下滑箭头可交互 */
+#page-header.full_page .el-hero-media,
+#page-header.full_page .el-hero-scrim,
+#page-header.full_page .el-hero-waves {
+  pointer-events: none;
+}
+
+/* ---- 装饰层 1：hero 图 ----
+   用 <img> 而不是 background-image：<img> 能吃到 object-fit / object-position，
+   取景可以随断点单独调（手机上要往人像那一侧压，见响应式段）。
+   为什么只有一张、没有"模糊底图 + 清晰主图"两层：
+   主图用的是 object-fit: cover，它本来就铺满整个首屏，模糊层会被完全盖住 ——
+   那种两层结构是给 contain（会留黑边）的窄图准备的，本站不需要，
+   多加一层就是白付一次 blur(26px) 的合成开销。
+   图片地址从 header 的内联 background-image 里读（见 vision.js 的 heroArtUrl），
+   所以换 index_img 时这里自动跟着走，不需要改 JS。 */
+.el-hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.el-hero-media__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 52% / 46% 是按 banner.webp 的实际构图定的：人像在 x≈30%、富士山在右中部，
+     cover 在 1440×900 下要横向裁掉 42%，这个取景让人像留在左侧三分之一、
+     脸不被文案卡压住，右侧留出天空和山。 */
+  object-position: 52% 46%;
+}
+
+/* ---- 装饰层 2：压暗与氛围 ----
+   三段叠起来，各自解决一个问题：
+     顶段   —— 给固定的胶囊导航留一条能读的暗带，值直接复用 --mark-bg
+               （它本来就是"标题压在照片上"这个用途，且自带亮/暗两套）
+     底段   —— 向波浪方向压暗。波浪是接近全白的平涂色，压在亮天空上会糊成一片，
+               底边压暗之后它的剪影才立得住；顺带让白色的下滑箭头有背景可读
+     左侧光晕 —— 强调色偏 +50 的径向光，和 ::after 的洗色同源，只是挪到图上面来 */
+.el-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, var(--mark-bg) 0%, transparent 32%),
+    linear-gradient(0deg, hsla(var(--accent-hue), 45%, 8%, 0.5) 0%, transparent 38%),
+    radial-gradient(58% 52% at 20% 30%, hsla(calc(var(--accent-hue) - 50), 88%, 62%, 0.2), transparent 72%);
+}
+
+/* 图是照片了，第 5 节那层白色网格线要收着点，否则和照片纹理打架 */
+#page-header.full_page::after {
+  opacity: 0.5;
+}
+
+/* ---- 装饰层 3：波浪衔接 ----
+   四层同一路径、不同 y 偏移与透明度，各自反向漂移，形成"水面的层次"。
+   fill 走 --el-surface，和内容区底色是**同一个变量**（见 :root 的说明）。
+   高度 7.5rem、bottom: -1px：-1px 是为了盖住亚像素舍入留下的那条缝，
+   波浪底部必须与 #web_bg 严丝合缝。 */
+.el-hero-waves {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  z-index: 2;
+  height: 7.5rem;
+  line-height: 0;
+}
+
+.el-hero-waves svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.el-hero-waves use {
+  fill: var(--el-surface);
+}
+
+.el-hero-waves use:nth-child(1) {
+  opacity: 0.22;
+  animation: el-wave-move 22s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite alternate;
+}
+
+.el-hero-waves use:nth-child(2) {
+  opacity: 0.44;
+  animation: el-wave-move 15s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite alternate-reverse;
+}
+
+.el-hero-waves use:nth-child(3) {
+  opacity: 0.64;
+  animation: el-wave-move 11s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite alternate;
+}
+
+/* 最上面这层不透明 —— 它就是"内容区"，必须和 #web_bg 无缝 */
+.el-hero-waves use:nth-child(4) {
+  opacity: 1;
+  animation: el-wave-move 8s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite alternate-reverse;
+}
+
+/* 漂移幅度刻意做成"不对称"（-90 出发、+85 收尾）：对称的话每层会在同一时刻
+   回到原点，四层一起"同步停一下"，看起来像掉帧。 */
+@keyframes el-wave-move {
+  from {
+    transform: translate(-90px, 0);
+  }
+  to {
+    transform: translate(85px, 0);
+  }
+}
+
+/* ---- 文字层提到装饰层之上 ---- */
+#page-header.full_page #site-info,
+#page-header.full_page #scroll-down {
+  z-index: 3;
+}
+
+/* ---- 玻璃文案卡（首页 / 文章页 / 普通页三种 hero 共用同一套配方）----
+   为什么不用 --el-glass-* 那一组令牌：那组是"浅色页面上的白玻璃"，
+   压在**照片**上时对比度会随取景漂移（同一张卡片，压到天空上就糊了）。
+   这里的卡片需要在任何取景、任何亮暗模式下都保证文字可读，所以写死一组
+   深色玻璃：亮暗两态通用，不参与主题切换。
+   深色玻璃 + 白字是刻意的，和 alethein 的 .hero-copy-card 同一种做法。
+
+   配方写在这一条里、三处共用；各自的几何在下面分开写 ——
+   几何是每张卡自己的事（首页要固定宽、内页要跟着内容宽），
+   混在一起改一处就会波及另外两处。 */
+#page-header.full_page #site-info,
+#page-header.post-bg #post-info,
+#page-header.not-home-page #page-site-info {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--el-radius-xl);
+  /* 52% → 62% 是照着实测截图调深的：0.52/0.26 那组在明亮天空的取景下
+     顶部几乎被玻璃化成了浅灰，白标题压在上面对比度不够。 */
+  background: linear-gradient(135deg, rgba(7, 9, 20, 0.62) 0%, rgba(18, 16, 34, 0.44) 100%);
+  backdrop-filter: blur(18px) saturate(138%);
+  -webkit-backdrop-filter: blur(18px) saturate(138%);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: el-fade-up 0.9s var(--el-ease) both;
+}
+
+/* 首页那张卡的几何 */
+#page-header.full_page #site-info {
+  position: static;
+  top: auto;
+  /* 必须给确定的宽度。父级是 align-items: center 的列 flex，
+     写 width: auto 会退化成 shrink-to-fit —— 而 #site-subtitle 里是打字机，
+     文字长度会从 0 开始长，卡片宽度会跟着抖动。
+     34rem 是按最长的一句副标题（「记录计算机学习与 408 考研」，1.72em 下约 390px）
+     定的：再窄会在打字机换句时折行，再宽（初版用的 46rem）卡片里会剩一大片空白，
+     反而像个没填完的框。 */
+  width: min(34rem, calc(100% - 2.4rem));
+  padding: 1.9rem 2.6rem 2rem;
+  text-align: center;
+}
+
+/* 卡里的大标题：光晕原来是为了在整张照片上抢读，现在有卡片托底了，
+   留着那圈 60px 的辉光只会显脏，收成一层短阴影。 */
+#page-header.full_page #site-title {
+  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.42);
+}
+
+/* ==========================================================================
+   5c. 内页 hero（文章页 / 普通页）
+   --------------------------------------------------------------------------
+   内页 hero 的高度在主题源码里写死（head.styl:97 `.post-bg { height: 400px }`、
+   :80 `.not-home-page { height: 400px }`，≤768 分别 360 / 280），配置里没有口子，
+   只能在这里覆盖。
+
+   三处必须写对的：
+
+   ① **两张内页的锚点要统一成 bottom。** 主题给 #post-info 的是 `bottom: 30px`，
+      给 #page-site-info 的却是 `top: 200px` —— 一张下锚一张上锚，两个标题落在
+      完全不同的高度上（截图里 about 的标题就明显比文章标题高一截）。
+      高度改成 min-height 之后，"top: 200px" 更是会直接飘在半空中。
+
+   ② **玻璃卡就是 #post-info / #page-site-info 自己** —— 它们里面只有
+      .post-title / #post-meta 这些内容节点，没有可用的包裹层可以承载背景。
+      要"内容多宽就多宽、同时居中"，用
+          left: 0; right: 0; width: max-content; margin: 0 auto
+      （和 #nav::before 的胶囊同一个套路）。
+      ⚠️ **不能**用 `left: 50%` + `transform: translateX(-50%)`：那条 transform 会让
+      卡片自己成为 backdrop root，把它身上的 backdrop-filter 采样切断 ——
+      症状是"玻璃卡退化成一块半透明色块"，且在页面顶部时看起来是好的，很难查。
+
+   ③ 高度用 min-height 而不是 height：标题 / meta 折行时不该被裁掉。
+      38svh 而不是 38vh —— 移动端地址栏收放时 vh 会跳，svh 取"能保证的那个高度"。
+   ========================================================================== */
+
+#page-header.post-bg,
+#page-header.not-home-page {
+  height: auto;
+  min-height: max(26rem, 38svh);
+}
+
+#page-header #post-info,
+#page-header #page-site-info {
+  top: auto; /* 压掉 #page-site-info 的 top: 200px */
+  bottom: 2rem;
+  left: 0;
+  right: 0;
+  width: max-content; /* 跟着内容长…… */
+  max-width: calc(100% - 2.4rem); /* ……但长标题不许顶出视口 */
+  /* margin: 0 auto 顺带把主题给 #post-info 的 `margin-bottom: 30px` 一并压掉 ——
+     那条是配合它原来的 `bottom: 30px` 用的，留着会变成两倍间距。 */
+  margin: 0 auto;
+  padding: 1.5rem 2.2rem 1.6rem;
+  text-align: center;
+}
+
+/* 卡片里的标题：原来直接压在整张照片上，那圈 60px 辉光是抢读用的；
+   有卡托底之后只会显脏，收成一层短阴影。 */
+#page-header.post-bg #post-info .post-title,
+#page-header.not-home-page #page-site-info #site-title {
+  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.42);
+}
+
+/* 深玻璃底上的次级文字：主题那套灰是给"浅底 + 白字混排"定的，在这层上偏暗 */
+#page-header.post-bg #post-info #post-meta,
+#page-header.post-bg #post-info #post-meta a {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+@media screen and (max-width: 768px) {
+  #page-header.post-bg,
+  #page-header.not-home-page {
+    min-height: max(22rem, 42svh);
+  }
+
+  /* 窄屏上卡片必须能贴到边 —— max-content 在 390px 下会顶满整宽，
+     这时 2.2rem 的内边距就显得太厚了。 */
+  #page-header #post-info,
+  #page-header #page-site-info {
+    bottom: 1.4rem;
+    max-width: calc(100% - 1.6rem);
+    padding: 1.15rem 1.4rem 1.25rem;
+  }
+}
+
+/* ---- 首屏的两个按钮 ----
+   主题在 #site_social_icons 之外没有可放按钮的容器，且这个位置不能复用
+   .site-page（那是导航的样式），所以是新增元素（vision.js 注入）。 */
+.el-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1.6rem;
+}
+
+.el-hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.62rem 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition: transform 0.35s var(--el-ease-back), background 0.35s var(--el-ease),
+    border-color 0.35s var(--el-ease), box-shadow 0.35s var(--el-ease);
+}
+
+.el-hero-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.el-hero-btn:focus-visible {
+  outline: 2px solid var(--el-sakura);
+  outline-offset: 3px;
+}
+
+/* 主按钮用深一档的强调色纯色，而不是 --el-grad-main：
+   渐变那三档的亮度都在 72% 以上，白字压上去对比度只有 1.9:1，读不清。
+   L=42% 是为了让白字在**任何色相**下都够（色相 60 附近的黄绿是最差情况，
+   再亮一档就会掉到 4.5:1 以下）。 */
+.el-hero-btn--primary {
+  border-color: transparent;
+  background: hsl(var(--accent-hue), 72%, 42%);
+  box-shadow: 0 10px 26px hsla(var(--accent-hue), 100%, 81%, 0.32);
+}
+
+.el-hero-btn--primary:hover {
+  border-color: transparent;
+  background: hsl(var(--accent-hue), 72%, 38%);
+  box-shadow: 0 14px 32px hsla(var(--accent-hue), 100%, 81%, 0.46);
+}
+
+.el-hero-btn i {
+  font-size: 0.92em;
+}
+
+/* ---- 社交图标：主题只在 ≤768px 显示（head.styl 的 +maxWidth768 分支），
+   首屏有卡片托底、又有空间，桌面也放出来 ---- */
+#page-header.full_page #site_social_icons {
+  display: block;
+  margin-top: 1.35rem;
+}
+
+/* 圆钮本身在 vision.css:440 已经是"38px 玻璃圆 + blur(8px)"，不用重画。
+   这里只做两件事：
+
+   1) 把图标统一成白色。主题给每个 <i> 打的是**内联的品牌色**
+      （#24292e / #00A1D6 / #000000 / #FF2442），四个高饱和度颜色放在
+      一张单色玻璃卡里，实测就是整块首屏最跳的东西 —— 抢标题的焦点。
+      品牌色是内联样式，只有 !important 压得住。
+      ⚠️ i.el-icon-xhs（vision.css:427）是 mask + `background-color: currentColor`，
+      所以这一条 color 会连带把小红书图标的填色也一起改掉 —— 这是想要的，
+      不要为它单独再写一条。
+      内页没有 #site_social_icons（主题只在 home 分支渲染），作用域写 .full_page 只是明示。
+
+   2) 圆底从 0.2 收到 0.14。在浅色页面上 0.2 的白玻璃刚好，但这里是深色卡，
+      0.2 会亮过卡片本身、把小圆点凸出来。 */
+#page-header.full_page #site_social_icons .social-icon {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+#page-header.full_page #site_social_icons .social-icon i {
+  color: #fff !important;
+}
+
+/* ⚠️ 这里**故意不写** @supports not (backdrop-filter) 的兜底：
+   vision.css:874 有一条 `#page-header #site_social_icons .social-icon
+   { background: rgba(255,255,255,.85) }` 的不透明回退，但它的特异性
+   (1,2,1) 低于上面的 (1,3,1)，在本站永远命中不了首屏。
+   这是对的 —— 0.85 的白圆 + 刚被改成白色的图标 = 白底白字。
+   深色卡自己已经有不透明兜底（见下方 #site-info 的 rgba(11,12,24,.86)），
+   圆钮压在它上面，0.14 的白足够。 */
+
+/* ---- 下滑箭头：主题贴在 bottom: 10px，正好落在波浪上（浅色波浪 + 白箭头 = 看不见）。
+   提到波浪之上、压在压暗段里，白色才读得出来。 ---- */
+#page-header.full_page #scroll-down {
+  bottom: 8.6rem;
+}
+
+/* ---- 新增玻璃组件的兜底：不支持 backdrop-filter 时，"玻璃"就是全透明，
+   白字直接压在照片上会读不清。给一个足够暗的不透明底。 ---- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #page-header.full_page #site-info {
+    background: rgba(11, 12, 24, 0.86);
+  }
+}
+
+/* 波浪漂移必须能被"减少动效"关掉 —— 四层无限动画，是本站最贵的一处。
+   custom.css 末尾（第 14 节）那段全局降级把 animation-duration 压成 0.001ms，
+   但那是靠时长压的，这里显式停掉更干净（也让 use 回到无偏移的初始帧）。
+
+   ⚠️ 选择器必须是 `use:nth-child(n)` 而不是 `use`：上面四层的规则写的是
+   `use:nth-child(1..4)`，特异性 (0,2,1) 高于 `use` 的 (0,1,1)。
+   写成 `use` 的话这条会被四层各自的 `animation` 简写压住 —— 实测
+   animationName 仍然是 el-wave-move，是一条安静的死代码。
+   `:nth-child(n)` 匹配所有子元素、特异性同为 (0,2,1)，再靠"同特异性下后写的赢"
+   （本块在四层规则之后）取胜。 */
+@media (prefers-reduced-motion: reduce) {
+  .el-hero-waves use:nth-child(n) {
+    animation: none;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  #page-header.full_page {
+    padding: 4rem 0 5rem;
+  }
+
+  .el-hero-waves {
+    height: 4.5rem;
+  }
+
+  /* 竖屏下 cover 会横向裁掉 80% 以上，必须往人像那一侧压，
+     否则 52% 的居中取景会正好把主角裁到画面外。 */
+  .el-hero-media__art {
+    object-position: 30% 42%;
+  }
+
+  #page-header.full_page #site-info {
+    width: calc(100% - 2rem);
+    padding: 1.5rem 1.4rem 1.6rem;
+  }
+
+  #page-header.full_page #site-title {
+    letter-spacing: 2px;
+  }
+
+  #page-header.full_page #scroll-down {
+    bottom: 5.4rem;
+  }
+
+  .el-hero-actions {
+    gap: 0.6rem;
+    margin-top: 1.15rem;
+  }
+
+  .el-hero-btn {
+    padding: 0.55rem 1.1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* 横屏手机 / 矮窗口：卡片 + 打字机副标题在这个高度上会顶穿 padding，
+   被 overflow: hidden 裁掉。把留白和波浪一起收掉换空间。 */
+@media screen and (max-height: 620px) {
+  #page-header.full_page {
+    padding: 4rem 0 5rem;
+  }
+
+  .el-hero-waves {
+    height: 4rem;
+  }
+
+  #page-header.full_page #scroll-down {
+    bottom: 4.8rem;
+  }
+}
+
+/* ==========================================================================
+   6. 首页文章卡片
+   ========================================================================== */
+
+#recent-posts .recent-post-item {
+  position: relative;
+  background: var(--el-glass-bg) !important;
+  backdrop-filter: blur(var(--el-glass-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--el-glass-blur)) saturate(170%);
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-xl);
+  box-shadow: var(--el-shadow-2);
+  overflow: hidden;
+  transition: transform 0.45s var(--el-ease), box-shadow 0.45s var(--el-ease),
+    border-color 0.45s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover {
+  transform: translateY(-9px);
+  box-shadow: var(--el-shadow-3), var(--el-shadow-glow);
+  border-color: rgba(255, 255, 255, 0.9);
+  /* 跟随光标的高光，坐标由 site-fx.js 写入 --el-mx / --el-my */
+  background:
+    radial-gradient(
+      340px circle at var(--el-mx, 50%) var(--el-my, 50%),
+      rgba(255, 255, 255, 0.5),
+      transparent 62%
+    ),
+    var(--el-glass-bg) !important;
+}
+
+/* 渐变描边：hover 时浮现 */
+#recent-posts .recent-post-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--el-grad-main);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover::before {
+  opacity: 1;
+}
+
+/* 高光扫过 */
+#recent-posts .recent-post-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  z-index: 1;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  pointer-events: none;
+  transition: left 0.75s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover::after {
+  left: 115%;
+}
+
+/* 封面：hover 缓慢放大 */
+#recent-posts .recent-post-item .post_cover {
+  overflow: hidden;
+}
+
+#recent-posts .recent-post-item .post_cover img.post-bg {
+  transition: transform 0.8s var(--el-ease), filter 0.5s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover .post_cover img.post-bg {
+  transform: scale(1.09);
+  filter: saturate(118%) brightness(1.04);
+}
+
+/* --------------------------------------------------------------------------
+   无封面文章的占位封面
+   --------------------------------------------------------------------------
+   这个块是 appearance.js 的 initCardCovers() **注入**的，不是主题的。
+
+   为什么必须注入真实元素：三篇文章在 front-matter 里都没配 cover，主题于是
+   根本不渲染 .post_cover 节点 —— 编译产物 `public/css/index.css:2766` 有一条
+   `#recent-posts .recent-post-item >.recent-post-info.no-cover { width: 100% }`，
+   直接把文字区铺满整卡。给一个不存在的元素写样式是**静默失败**。
+   伪元素也走不通：::before 没法当兄弟节点的 flex 项。
+
+   42% 是从主题 layout 3 抄来的（`index.css:2726` 一带：`.post_cover 42%` /
+   `.recent-post-info 58%`），下面那条把 no-cover 从 100% 收回 58%，
+   两者才拼得回一张横排卡。
+
+   降级：JS 没跑时这个块不存在，卡片退回"整宽文字卡"的原样 —— 纯装饰，不崩布局。
+   -------------------------------------------------------------------------- */
+#recent-posts .recent-post-item .el-card-cover {
+  position: relative;
+  flex: 0 0 42%;
+  align-self: stretch; /* 压过卡片的 align-items: center，让封面撑满卡高 */
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: hsl(var(--accent-hue), 100%, 96%);
+  /* 光斑位置与渐变角度都按 --el-cover-i（JS 写的卡片序号）错开 ——
+     否则一排卡片是同一张图复制出来的，比没有封面还显廉价。
+     底色刻意压暗（L 38% → 14%）：它要在深浅两种模式下都像"一张图"，
+     而不是一块跟卡片抢注意力的亮色板。 */
+  background:
+    radial-gradient(
+      circle at calc(26% + var(--el-cover-i, 0) * 6%) 22%,
+      hsla(calc(var(--accent-hue) - 74), 90%, 68%, 0.5),
+      transparent 46%
+    ),
+    linear-gradient(
+      calc(132deg + var(--el-cover-i, 0) * 23deg),
+      hsl(var(--accent-hue), 50%, 38%),
+      hsl(calc(var(--accent-hue) - 74), 46%, 14%)
+    );
+}
+
+/* 右侧压暗：封面与文字之间需要一条柔软的界，否则深色模式下两者会糊成一片 */
+#recent-posts .recent-post-item .el-card-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 58%, hsla(var(--accent-hue), 45%, 8%, 0.3));
+  pointer-events: none;
+}
+
+/* 铺满封面的点击面（见 appearance.js 里"整卡不可点"那段说明）。
+   压在 ::after 的压暗层下面也无所谓 —— 那层有 pointer-events: none，
+   点不到它，事件会落到这里。 */
+#recent-posts .recent-post-item .el-card-cover__link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+#recent-posts .recent-post-item .el-card-cover i {
+  font-size: 2.5rem;
+  opacity: 0.85;
+  text-shadow: 0 2px 16px hsla(var(--accent-hue), 60%, 10%, 0.55);
+  transform: rotate(calc(var(--el-cover-i, 0) * 3deg - 6deg));
+  transition: transform 0.65s var(--el-ease), opacity 0.5s var(--el-ease);
+}
+
+/* 这里给的是写死的 -7deg，不是 base 那条带 --el-cover-i 的表达式 ——
+   hover 是"归位到同一个姿态"，一排卡往同一个角度收才整齐。 */
+#recent-posts .recent-post-item:hover .el-card-cover i {
+  transform: rotate(-7deg) scale(1.12);
+  opacity: 1;
+}
+
+/* 把 no-cover 从 100% 收回 58%，和主题 layout 3 的横排比例对齐。
+   特异性与主题那条完全相同（都是 1 个 id + 3 个 class），靠"custom.css
+   加载在 index.css 之后"取胜 —— 别再给它降特异性，否则封面会占满整卡、
+   文字被挤到卡片外面。 */
+#recent-posts .recent-post-item > .recent-post-info.no-cover {
+  width: 58%;
+}
+
+/* ≤768px：主题把卡片改成 flex-direction: column（封面在上、文字在下），
+   两处都要跟着回到"竖排"。 */
+@media screen and (max-width: 768px) {
+  #recent-posts .recent-post-item .el-card-cover {
+    flex: 0 0 auto;
+    align-self: auto;
+    width: 100%;
+    height: 230px; /* 对齐主题 .post_cover 在 ≤768 下的 230px */
+  }
+
+  /* 上面那条 58% 与主题的 100% 特异性相同、又在 index.css 之后，
+     会把主题的移动端行为压掉 —— 所以这里必须显式写回 100%。
+     （不是重复劳动：漏了这一条，窄屏上文字区只占 58%，右边空一块。） */
+  #recent-posts .recent-post-item > .recent-post-info.no-cover {
+    width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   网格模式（面板 →「文章布局」）
+   --------------------------------------------------------------------------
+   html 上的 data-content-layout 由 appearance.js 的 applyLayout() 写。
+   只重排 CSS、不重建 DOM —— 节点一动，波纹、点击热区、pjax 缓存都要重挂。
+
+   固定 2 列：本站文章很少，3 列会让每张卡的标题只剩两三个字。
+   -------------------------------------------------------------------------- */
+html[data-content-layout='grid'] #recent-posts .recent-post-items {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+html[data-content-layout='grid'] #recent-posts .recent-post-item {
+  flex-direction: column;
+  align-items: stretch; /* 压过主题的 align-items: center */
+  height: auto;
+  margin-bottom: 0; /* 间距交给 grid 的 gap，留着会叠成 40px */
+}
+
+html[data-content-layout='grid'] #recent-posts .recent-post-item .el-card-cover {
+  flex: 0 0 auto;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+html[data-content-layout='grid'] #recent-posts .recent-post-item > .recent-post-info.no-cover {
+  width: 100%;
+  padding: 22px 26px 26px;
+}
+
+/* 窄屏退回单列 —— 390px 下两列会把每张卡压到 175px 宽，标题只剩两三个字。
+   （封面的 aspect-ratio 不用管：上面那条带 html[...] 的特异性高于移动端的
+     固定 230px，窄屏下自动按 16:9 算，比例反而更稳。） */
+@media screen and (max-width: 768px) {
+  html[data-content-layout='grid'] #recent-posts .recent-post-items {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 标题 */
+#recent-posts .recent-post-item .article-title {
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  transition: color 0.3s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover .article-title {
+  color: var(--el-sakura-deep);
+}
+
+/* 标题左侧渐变条 */
+#recent-posts .recent-post-item .article-title::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 1em;
+  margin-right: 0;
+  vertical-align: -0.12em;
+  border-radius: 3px;
+  background: var(--el-grad-main);
+  transition: width 0.35s var(--el-ease), margin-right 0.35s var(--el-ease);
+}
+
+#recent-posts .recent-post-item:hover .article-title::before {
+  width: 4px;
+  margin-right: 9px;
+}
+
+/* 摘要 */
+#recent-posts .recent-post-item .content {
+  color: var(--el-text-soft);
+  line-height: 1.85;
+}
+
+/* 元信息胶囊 */
+#recent-posts .recent-post-item .article-meta-wrap {
+  color: var(--el-text-mute);
+}
+
+#recent-posts .recent-post-item .article-meta-wrap a {
+  color: var(--el-text-mute);
+  transition: color 0.25s var(--el-ease);
+}
+
+#recent-posts .recent-post-item .article-meta-wrap a:hover {
+  color: var(--el-sakura-deep);
+}
+
+/* ==========================================================================
+   7. 侧边栏卡片
+   ========================================================================== */
+
+#aside-content .card-widget {
+  position: relative;
+  background: var(--el-glass-bg) !important;
+  backdrop-filter: blur(var(--el-glass-blur)) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--el-glass-blur)) saturate(170%);
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-lg);
+  box-shadow: var(--el-shadow-2);
+  overflow: hidden;
+  transition: transform 0.4s var(--el-ease), box-shadow 0.4s var(--el-ease);
+}
+
+#aside-content .card-widget:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--el-shadow-3);
+  background:
+    radial-gradient(
+      260px circle at var(--el-mx, 50%) var(--el-my, 50%),
+      rgba(255, 255, 255, 0.42),
+      transparent 64%
+    ),
+    var(--el-glass-bg) !important;
+}
+
+[data-theme='dark'] #recent-posts .recent-post-item:hover,
+[data-theme='dark'] #aside-content .card-widget:hover {
+  background:
+    radial-gradient(
+      300px circle at var(--el-mx, 50%) var(--el-my, 50%),
+      hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.22),
+      transparent 64%
+    ),
+    var(--el-glass-bg) !important;
+}
+
+/* 卡片标题前的渐变竖条 */
+#aside-content .card-widget .item-headline::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 0.9em;
+  margin-right: 8px;
+  vertical-align: -0.08em;
+  border-radius: 3px;
+  background: var(--el-grad-main);
+}
+
+#aside-content .card-widget .item-headline {
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+/* 头像 */
+#aside-content .card-info .avatar-img,
+#aside-content .avatar {
+  border-radius: 50%;
+  box-shadow: 0 8px 26px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35), 0 0 0 3px rgba(255, 255, 255, 0.65);
+  transition: transform 0.7s var(--el-ease), box-shadow 0.5s var(--el-ease);
+}
+
+#aside-content .card-info .avatar-img:hover,
+#aside-content .avatar:hover {
+  transform: rotate(360deg) scale(1.08);
+  box-shadow: 0 10px 34px hsla(var(--accent-hue), 100%, 81%, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.85);
+}
+
+/* ⚠️ 类名是单下划线（.author-info-name），不是 BEM 的双下划线。
+   主题模板 card_author.pug 输出的是 .author-info-name / .author-info-description，
+   写成 __name 会静默失效（选择器不匹配不报错，只是永远不生效）。 */
+#aside-content .card-info .author-info-name {
+  font-weight: 700;
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+#aside-content .card-info .author-info-description {
+  color: var(--el-text-soft);
+  line-height: 1.75;
+}
+
+/* GitHub 按钮 */
+#card-info-btn {
+  border-radius: 999px !important;
+  background: var(--el-grad-main) !important;
+  border: none;
+  box-shadow: 0 8px 22px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.32);
+  transition: transform 0.35s var(--el-ease-back), box-shadow 0.35s var(--el-ease);
+}
+
+#card-info-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 14px 32px hsla(var(--accent-hue), 100%, 81%, 0.45);
+}
+
+/* 公告 */
+#aside-content .card-announcement .item-headline {
+  color: var(--el-text);
+}
+
+/* 标签云 */
+#aside-content .card-tag-cloud a {
+  border-radius: 999px;
+  padding: 3px 11px !important;
+  border: 1px solid var(--el-glass-border-dim);
+  background: var(--el-glass-bg-soft);
+  transition: transform 0.3s var(--el-ease-back), background 0.3s var(--el-ease),
+    color 0.3s var(--el-ease);
+}
+
+#aside-content .card-tag-cloud a:hover {
+  transform: translateY(-3px) scale(1.06);
+  background: var(--el-grad-main);
+  color: #fff !important;
+  border-color: transparent;
+}
+
+/* 站点信息数字 */
+#aside-content .card-webinfo .webinfo-item .webinfo-count {
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+}
+
+/* 目录 */
+#card-toc .toc-content .toc-link.active,
+#card-toc .toc-content .toc-link:hover {
+  color: var(--el-sakura-deep);
+}
+
+#card-toc .toc-content .toc-link.active {
+  background: hsla(var(--accent-hue), 100%, 81%, 0.14);
+  border-radius: 6px;
+}
+
+/* ==========================================================================
+   8. 文章详情页
+   ========================================================================== */
+
+#post,
+#page {
+  border-radius: var(--el-radius-xl);
+  /* 顶部「纸张微光」：从顶沿往下 180px 内渐隐，给整块正文卡做出玻璃厚度。
+     这里**刻意用 background-image，而不是 ::before / ::after**：
+     #post / #page 实测是 position: static，伪元素想铺满就必须先补
+     position: relative，而 #post 里存在 .headerlink 这类绝对定位元素，
+     换包含块有位移风险（我实测过三类页面，能过，但没必要冒）。
+     背景层天生画在内容之下、天生被 border-radius 裁切，零风险，
+     而且把伪元素余量留给以后更复杂的动效。
+     颜色不写死：深色模式在下面第 13 节单独收暗。 */
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0) 180px
+  );
+}
+
+/* 正文排版 */
+#article-container {
+  color: var(--el-text);
+  line-height: 1.95;
+  letter-spacing: 0.2px;
+}
+
+#article-container h1,
+#article-container h2,
+#article-container h3,
+#article-container h4 {
+  position: relative;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+#article-container h2::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 0.86em;
+  margin-right: 10px;
+  vertical-align: -0.06em;
+  border-radius: 4px;
+  background: var(--el-grad-main);
+  box-shadow: 0 0 12px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.5);
+}
+
+#article-container a {
+  color: var(--el-violet);
+  border-bottom: 1px dashed hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.5);
+  text-decoration: none;
+  transition: color 0.25s var(--el-ease), border-color 0.25s var(--el-ease);
+}
+
+#article-container a:hover {
+  color: var(--el-sakura-deep);
+  border-bottom-color: var(--el-sakura-deep);
+  border-bottom-style: solid;
+}
+
+#article-container img {
+  border-radius: var(--el-radius-md);
+  box-shadow: var(--el-shadow-2);
+  transition: transform 0.5s var(--el-ease), box-shadow 0.5s var(--el-ease);
+}
+
+#article-container img:hover {
+  transform: scale(1.015);
+  box-shadow: var(--el-shadow-3);
+}
+
+#article-container blockquote {
+  border-left: 4px solid transparent;
+  border-image: var(--el-grad-main) 1;
+  background: linear-gradient(90deg, hsla(var(--accent-hue), 100%, 81%, 0.12), hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.06));
+  border-radius: 0 var(--el-radius-md) var(--el-radius-md) 0;
+  padding: 14px 20px;
+  color: var(--el-text-soft);
+}
+
+/* 行内代码 */
+#article-container code:not([class*='language-']) {
+  border-radius: 6px;
+  padding: 2px 7px;
+  background: hsla(var(--accent-hue), 100%, 81%, 0.14);
+  color: var(--el-sakura-deep);
+  font-family: 'JetBrains Mono', Consolas, Menlo, monospace;
+}
+
+/* 代码块 */
+#article-container figure.highlight,
+#article-container pre {
+  border-radius: var(--el-radius-md);
+  box-shadow: var(--el-shadow-2);
+  border: 1px solid var(--el-hairline);
+}
+
+#article-container figure.highlight {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 代码块顶部渐变条 */
+#article-container figure.highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--el-grad-main);
+}
+
+/* 表格 */
+#article-container table {
+  border-radius: var(--el-radius-md);
+  overflow: hidden;
+  box-shadow: var(--el-shadow-1);
+}
+
+#article-container table thead th {
+  background: linear-gradient(120deg, hsla(var(--accent-hue), 100%, 81%, 0.18), hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.16));
+  font-weight: 700;
+}
+
+/* 版权卡片 */
+#post .post-copyright {
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--el-glass-border);
+  box-shadow: var(--el-shadow-1);
+}
+
+/* 上下篇导航
+   ---------------------------------------------------------------------------
+   原选择器 `#pagination-post .prev-post / .next-post` 是给旧版 Butterfly 写的，
+   现在产物 HTML 里零命中（新版是 <nav class="pagination-post" id="pagination">
+   里包一个 <a class="pagination-related">），所以这一节的样式此前从未生效过。
+   注意：#pagination 这个 id 文章页是「上下篇导航」、列表页是「数字分页器」，
+   两者共用，所以必须带 .pagination-related 限定，不能写成 #pagination {}，
+   否则会误伤下面第 9 节那套胶囊分页按钮。 */
+#pagination .pagination-related {
+  border-radius: var(--el-radius-lg);
+  overflow: hidden;
+  transition: transform 0.4s var(--el-ease), box-shadow 0.4s var(--el-ease);
+}
+
+#pagination .pagination-related:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--el-shadow-2);
+}
+
+/* .cover 原本是 opacity: .4，那是「压在纯黑底上」的用法，和黑底相乘后
+   无论 --default-bg-color 换成什么颜色都会变成脏暗色（换深墨紫实测 rgb(12,11,20)）。
+   提到 1 之后：没设封面的文章走上面那个渐变令牌，设了封面的文章则正常显示封面图
+   —— 顺带修掉了「真封面也被压暗到 40%」的问题。
+   hover 同样要写：主题的 :hover 规则会把 opacity 降回 .5。
+   必须用 #pagination .pagination-related 限定，因为 .cover 这个 class 同时被
+   侧栏缩略图 .aside-list-item .cover 和归档页 .article-sort-item .cover 共用。 */
+#pagination .pagination-related .cover {
+  opacity: 1;
+}
+
+#pagination .pagination-related:hover .cover {
+  opacity: 1; /* 放大交给主题的 transform: scale(1.1)，不再变暗 */
+}
+
+/* 打赏 / 相关推荐 */
+#post .reward,
+#related-posts {
+  border-radius: var(--el-radius-md);
+}
+
+/* ==========================================================================
+   9. 分页 / 按钮 / 标签
+   ========================================================================== */
+
+#pagination .page-number,
+#pagination .extend {
+  border-radius: 999px;
+  border: 1px solid var(--el-glass-border-dim);
+  background: var(--el-glass-bg-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.3s var(--el-ease-back), background 0.3s var(--el-ease),
+    color 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease);
+}
+
+#pagination .page-number:hover,
+#pagination .extend:hover {
+  transform: translateY(-3px);
+  background: var(--el-grad-main);
+  color: #fff !important;
+  border-color: transparent;
+  box-shadow: 0 10px 24px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.34);
+}
+
+#pagination .page-number.current {
+  background: var(--el-grad-main);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 10px 26px hsla(var(--accent-hue), 100%, 81%, 0.4);
+}
+
+/* 归档 / 分类 / 标签列表项 */
+#page .category-lists .category-list a,
+#page .tag-cloud-list a {
+  border-radius: 999px;
+  transition: transform 0.3s var(--el-ease-back), background 0.3s var(--el-ease);
+}
+
+#page .tag-cloud-list a:hover {
+  transform: translateY(-3px) scale(1.06);
+  background: var(--el-grad-main) !important;
+  color: #fff !important;
+}
+
+/* 文章内标签 */
+#post .post-tags a,
+.tag_share .tag {
+  border-radius: 999px;
+  transition: transform 0.3s var(--el-ease-back);
+}
+
+#post .post-tags a:hover {
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   10. 表单控件
+   ========================================================================== */
+
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+select {
+  border-radius: var(--el-radius-sm);
+  border: 1px solid var(--el-glass-border-dim);
+  background: var(--el-glass-bg-soft);
+  transition: border-color 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--el-violet);
+  box-shadow: 0 0 0 3px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.2);
+}
+
+/* ==========================================================================
+   11. 滚动条 / 页脚 / 右下角按钮
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--el-grad-main);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(var(--accent-hue), 100%, 72%), hsl(calc(var(--accent-hue) - 37), 81%, 68%));
+  background-clip: content-box;
+}
+
+#footer {
+  position: relative;
+  background: rgba(255, 255, 255, 0.3) !important;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  /* 这里不再写 border-top：顶边已经有一条 2px 的 --el-grad-main 渐变线
+     （见下面的 ::before），再叠一条 1px 实边就是两条平行的切边，互相糊掉。 */
+  color: var(--el-text-soft);
+}
+
+/* ⚠️ 必须压 `#footer > *`，只改 #footer 自己是没用的 ——
+   主题 footer.styl 有一条
+       #footer > * { color: var(--light-grey) }
+   那是给"深蓝页脚 + 白字"配的近白色。本站把页脚换成了浅色玻璃之后，
+   这层近白文字就成了白纸上的白字：实测 .footer-copyright 的计算色是
+   rgb(238,238,238)，压在 rgba(255,255,255,.3) 的玻璃上，版权行基本读不出来。
+   子元素上的这条规则直接命中 .footer-other，继承来的颜色救不了它。 */
+#footer > * {
+  color: var(--el-text-soft);
+}
+
+/* 页脚留白：主题默认 padding: 40px 20px，收得太紧（参考站的页脚是
+   `4.2rem 0 7rem` —— 下方比上方厚，因为页脚之后没有内容了，多留一点才不憋）。
+   本站页脚只有一个 .footer-other 子元素，撑高它等于撑高整个页脚。 */
+#footer .footer-other {
+  padding: 3rem 1.2rem 3.6rem;
+  font-size: 0.94em;
+}
+
+/* 第二行（框架 / 主题信息）和版权行拉开层次。
+   刻意**不压颜色** —— 一开始这里写的是 `color: var(--el-text-mute)`，
+   实测计算值 rgb(161,139,167) 压在这块浅玻璃上只有 2.8:1 对比度，
+   连 WCAG 大字号的 3:1 都够不着（版权行是 5.5:1）。
+   `--el-text-mute` 是给卡片内小字配的档位，搬到更亮的页脚底上就偏白了。
+   所以层次改用**字号 + 间距**表达，颜色一律继承上一条的 --el-text-soft。 */
+#footer .framework-info {
+  margin-top: 0.4rem;
+  font-size: 0.92em;
+  letter-spacing: 0.01em;
+}
+
+/* ⚠️ 这里没有"伪元素冲突"要修，别被配置误导：
+   主题 footer.styl 里那条遮罩的生效条件是
+   `footer_img != false && mask.footer`，而本站 footer_img: false，
+   整块被短路 —— 编译产物里**根本没有** `#footer:before` 这条规则。
+   所以配置里的 mask.footer: true 是空转的，和下面这条 ::before 互不相干。
+   （我先前把它当成"遮罩被渐变线顶掉"的 bug，是误判，已纠正。） */
+
+#footer::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--el-grad-main);
+  opacity: 0.85;
+}
+
+/* 页脚玻璃细节：在渐变线下方补一段顶沿内发光，做出"玻璃有厚度"的观感。
+   只能放 ::after（::before 已被渐变线占用），且**不能**用 z-index: -1
+   藏到内容后面 —— 页脚只有一个 .footer-other 子元素，它自带
+   rgba(0,0,0,.1) 底色，会把负层整个盖住。
+   所以这层确实压在文字之上，高度必须收在文字开始之前：
+   .footer-other 的 padding-top 是 10px，这里 6px 内就淡尽，碰不到字。 */
+#footer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+#footer a {
+  color: var(--el-text-soft);
+  transition: color 0.25s var(--el-ease);
+}
+
+#footer a:hover {
+  color: var(--el-sakura-deep);
+}
+
+/* 右下角按钮组 */
+#rightside > div > button,
+#rightside > div > a {
+  border-radius: 50%;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--el-glass-border);
+  box-shadow: var(--el-shadow-1);
+  transition: transform 0.35s var(--el-ease-back), background 0.3s var(--el-ease),
+    color 0.3s var(--el-ease);
+}
+
+#rightside > div > button:hover,
+#rightside > div > a:hover {
+  transform: translateY(-3px) scale(1.1);
+  background: var(--el-grad-main) !important;
+  color: #fff !important;
+}
+
+/* 阅读进度条 */
+#rightside #go-up .scroll-percent {
+  color: var(--el-violet);
+  font-weight: 700;
+}
+
+/* 预加载动画。⚠️ 这两块是全屏幕布（左右各半，加载完向两边拉开），
+   原值是写死的 #2a2340 / #1b1b2e —— 实测 hsl(254,29%,19%) / hsl(240,26%,14%)，
+   都是"看着像黑、其实是紫"的灰区色，和 --mark-bg 同一类。
+   留着的话，色相拖到绿色系时幕布还是紫的，而且它**每次进站都第一个出现**，
+   是整站最容易看见残留的地方。所以一并跟色相走。
+
+   偏移取 **-37（violet 家族）而不是 0**：原值的色相 240~254 落在 violet 那一档上
+   （默认 286 时 -37 = 249，几乎就是原色），取 0 反而会把幕布从 254 拽到 286、
+   默认外观先变一遍。这样既是既有配色家族的成员，又跟着滑块走。 */
+#loading-box .loading-left-bg,
+#loading-box .loading-right-bg {
+  background: linear-gradient(
+    135deg,
+    hsl(calc(var(--accent-hue) - 37), 30%, 20%),
+    hsl(calc(var(--accent-hue) - 37), 26%, 14%)
+  );
+}
+
+#loading-box .spinner-box .loading-word {
+  color: var(--el-sakura);
+}
+
+#loading-box .spinner-box .configure-core {
+  background: var(--el-grad-main);
+  box-shadow: 0 0 24px hsla(var(--accent-hue), 100%, 81%, 0.6);
+}
+
+/* ==========================================================================
+   12. 动画与关键帧
+   ========================================================================== */
+
+@keyframes el-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, -2.5%, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-3%, 2%, 0) scale(1.04);
+  }
+}
+
+/* 只平移前两层网格，后面 4 层极光锚定不动，所以必须写满 6 个值 */
+@keyframes el-grid-pan {
+  0% {
+    background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 46px 46px, 46px 46px, 0 0, 0 0, 0 0, 0 0;
+  }
+}
+
+@keyframes el-title-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@keyframes el-fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes el-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes el-pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 hsla(var(--accent-hue), 100%, 81%, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 16px hsla(var(--accent-hue), 100%, 81%, 0);
+  }
+}
+
+/* ==========================================================================
+   13. 深色模式
+   ========================================================================== */
+
+[data-theme='dark'] {
+  /* 深色玻璃底：原值 rgba(30,32,54,*) / rgba(26,28,48,*) 实测色相 235、饱和度 29% ——
+     不是中性黑，是"看得出来的蓝紫"。这里把色相接上 --accent-hue、S/L 原样保留
+     （alethein 的深色底 hsl(286 21% 9%) 也是带色偏的，不是纯灰）。
+
+     ⚠️ 别把这一组和更暗的那些混为一谈：#nav / #footer 的深色底 rgba(18,19,34,*)
+     实测 L=10%、肉眼即黑，那几个**保持中性不转**，见下方 1248/1252 行。 */
+  --el-glass-bg: hsla(var(--accent-hue), 29%, 16%, 0.55);
+  --el-glass-bg-soft: hsla(var(--accent-hue), 29%, 16%, 0.4);
+  --el-glass-bg-strong: hsla(var(--accent-hue), 30%, 15%, 0.82);
+  /* 这两条是纯白透明，本来就是中性，不转 */
+  --el-glass-border: rgba(255, 255, 255, 0.14);
+  --el-glass-border-dim: rgba(255, 255, 255, 0.08);
+
+  /* 深色下高光要更含蓄，否则玻璃会发灰 */
+  --el-liquid-sheen: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.03) 38%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  --el-liquid-inset: rgba(255, 255, 255, 0.14);
+  --el-liquid-edge: rgba(255, 255, 255, 0.3);
+
+  /* 正文三档：浅色侧是 hsl(hue 23% 15%)，深色侧只换亮度与透明度基色 ——
+     用一个够亮的同色相底色 + 三档 alpha，比直接调 L 更好保持层间关系。 */
+  --el-text: hsla(var(--accent-hue), 30%, 93%, 0.86);
+  --el-text-soft: hsla(var(--accent-hue), 30%, 93%, 0.66);
+  --el-text-mute: hsla(var(--accent-hue), 30%, 93%, 0.48);
+  --el-hairline: hsla(var(--accent-hue), 18%, 33%, 0.66);
+
+  /* 内容区底色的深色侧。浅色侧的说明见文件开头 :root 里的 --el-surface。
+     亮度取 10%：比主题深色玻璃底（--el-glass-bg-strong）再深一档，
+     因为它是"页面底"而不是"卡片面"，卡片压在上面才立得起来。
+     alethein 的深色 --bg 是 hsl(286 21% 9%)，同档。 */
+  --el-surface: hsl(var(--accent-hue), 20%, 10%);
+
+  /* 深色阴影原为纯黑。这里也染色相、并把 L 压到 6% ——
+     纯黑阴影在暗色页上显脏灰，带色偏的深影子才是那套观感的来源。 */
+  --el-shadow-1: 0 2px 10px hsla(var(--accent-hue), 30%, 6%, 0.3);
+  --el-shadow-2: 0 8px 26px hsla(var(--accent-hue), 30%, 6%, 0.42);
+  --el-shadow-3: 0 20px 46px hsla(var(--accent-hue), 30%, 6%, 0.55);
+  /* ⚠️ 浅色侧的 --el-shadow-glow 在文件开头的 :root 里也写了一遍，改一处要同时改另一处 */
+  --el-shadow-glow: 0 14px 38px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.32);
+
+  /* 深色下反过来：底色暗，强调文字要够亮才读得清 */
+  --el-accent-ink: hsl(var(--accent-hue), 70%, 76%);
+
+  --card-meta: var(--el-text-mute);
+  /* 原值 rgba(8,8,20,.5) 实测 hsla(240, 43%, 6%)，同 --mark-bg 浅色侧的处理 */
+  --mark-bg: hsla(var(--accent-hue), 43%, 6%, 0.5);
+  --scrollbar-color: var(--el-violet);
+
+  /* 主题的正文色与强调文字色，浅色侧的对应声明见文件开头 :root 里的长注释。
+     深色侧的主题原值是纯中性白（--font-color: rgba(255,255,255,.7) /
+     --text-highlight-color: rgba(255,255,255,.9)），这里同样只换基色不改层间关系：
+     强调档的 alpha 比 --el-text 的 .86 再高一档，保持"标题比正文更亮"。
+     ⚠️ 这两条必须写在 [data-theme='dark'] 里而不是 :root：
+     index.css 里对应声明也在 [data-theme='dark'] 下（特异性 0,2,0 > :root 的 0,1,0），
+     写在 :root 里压不住它。 */
+  --font-color: hsla(var(--accent-hue), 22%, 92%, 0.7);
+  --text-highlight-color: hsla(var(--accent-hue), 26%, 95%, 0.92);
+}
+
+[data-theme='dark'] #web_bg::after {
+  opacity: 0.5;
+}
+
+[data-theme='dark'] #nav {
+  background: rgba(18, 19, 34, 0.55) !important;
+}
+
+[data-theme='dark'] #footer {
+  background: rgba(18, 19, 34, 0.4) !important;
+}
+
+/* 正文卡与页脚的顶沿微光在深色下要收着，否则深底玻璃会发灰。
+   数值参照第 1 节 --el-liquid-sheen 的深色版（0.5 → 0.14 的比例）。 */
+[data-theme='dark'] #post,
+[data-theme='dark'] #page {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0) 180px
+  );
+}
+
+[data-theme='dark'] #footer::after {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+[data-theme='dark'] #article-container code:not([class*='language-']) {
+  background: hsla(var(--accent-hue), 100%, 81%, 0.2);
+  color: hsl(var(--accent-hue), 100%, 86%);
+}
+
+[data-theme='dark'] #recent-posts .recent-post-item::after {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 100%
+  );
+}
+
+[data-theme='dark'] #recent-posts .recent-post-item:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+[data-theme='dark'] #aside-content .card-info .avatar-img,
+[data-theme='dark'] #aside-content .avatar {
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.14);
+}
+
+/* ==========================================================================
+   14. 响应式与性能降级
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+  #recent-posts .recent-post-item {
+    border-radius: var(--el-radius-lg);
+  }
+
+  #aside-content .card-widget {
+    border-radius: var(--el-radius-md);
+  }
+
+  /* 移动端 backdrop-filter 开销高，降低模糊半径。
+     ⚠ #nav 本身不能出现在下面这张表里 —— 它的背景已经交给 #nav::before 的胶囊，
+     自身是透明的。给一个透明元素加 backdrop-filter 不会"没效果"，而是会把整条
+     全宽 60px 的区域都糊掉（蒙版不受 background 限制），在胶囊左右两侧露出两条
+     比胶囊还宽的模糊带；同时胶囊真正的模糊半径一点没降。
+     所以这里改的是令牌，不是实现。 */
+  #nav {
+    --el-nav-blur: 10px;
+  }
+
+  #recent-posts .recent-post-item,
+  #aside-content .card-widget,
+  #footer {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* 移动端 fixed 背景会拖慢滚动 */
+  #page-header.full_page {
+    background-attachment: scroll !important;
+  }
+
+  /* 竖屏取景：background.webp 是 1672×941（约 16:9）的横构图，
+     手机竖屏（如 390×844）用 cover 后，可视宽度只占原图约 26%，
+     而默认的 50% 50% 取的是正中 —— 那里是天空和城市，人物会整个出画。
+     往左偏移到 22% 把人物拉回画面里。这个值是按原图人物位置算的，
+     改图的话要跟着改。 */
+  #web_bg {
+    background-position: 22% 50%;
+  }
+
+  #recent-posts .recent-post-item:hover {
+    transform: none;
+  }
+
+  #web_bg::after {
+    animation: none;
+  }
+}
+
+/* 尊重系统「减少动态效果」设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  #web_bg::after {
+    animation: none;
+  }
+
+  .el-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 不支持 backdrop-filter 时退回不透明背景，保证可读性。
+   ⚠ 这里**不能**再给 `#nav` 铺不透明底 —— #nav 现在是全透明的，底在 `#nav::before`
+   的胶囊上；给它铺一层就会退化成"整条全宽白条"，胶囊白做。
+   胶囊自己的不透明兜底写在上面第 4 节里（那一处用 var(--el-surface)，深浅两态通吃）。 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #recent-posts .recent-post-item,
+  #aside-content .card-widget {
+    background: rgba(255, 255, 255, 0.94) !important;
+  }
+
+  [data-theme='dark'] #recent-posts .recent-post-item,
+  [data-theme='dark'] #aside-content .card-widget {
+    background: rgba(24, 25, 44, 0.96) !important;
+  }
+
+  /* hero 那三张深色玻璃卡：它们本来就压在照片上，没有模糊时 62% 的透明度
+     会让照片细节从字缝里透出来（"能看见字、但读起来很累"）。
+     这里只把透明度拉高，**不改配色** —— 它们本来就是亮暗通用的深色玻璃，
+     再加一层 [data-theme='dark'] 分支反而是多余的。 */
+  #page-header.full_page #site-info,
+  #page-header.post-bg #post-info,
+  #page-header.not-home-page #page-site-info {
+    background: linear-gradient(135deg, rgba(7, 9, 20, 0.9) 0%, rgba(18, 16, 34, 0.86) 100%);
+  }
+}

@@ -1,0 +1,586 @@
+/* ==========================================================================
+   EndlessLoop · 悬浮音乐播放器样式（可拖动 / 带歌词）
+   --------------------------------------------------------------------------
+   1. 悬浮按钮
+   2. 展开面板
+   3. APlayer 外观覆写
+   4. 收起状态的当前歌词
+   5. 深色模式
+   6. 移动端 / 降级
+
+   依赖 custom.css 里的设计令牌（--el-*）
+
+   ⚠️ 第 3 节全部用 #el-music-player 这个 ID 当前缀，不是随手写的 ——
+      APlayer 的样式表是 music.js 在运行时 <link> 进 <head> 的，
+      也就是说它排在 music.css **后面**。
+      而 APlayer 自己的选择器是 .aplayer .aplayer-lrc p 这种 (0,2,1) 级别的，
+      和 .el-music-player .aplayer-lrc p 完全打平 ——
+      平手时后加载的赢，所以用类名前缀写的覆写会**整片失效**。
+      （一期就是这么写的，歌词、标题、进度条的定制其实一直没生效。）
+      换成 ID 前缀（1,x,x）就能无条件压过它所有的类选择器。
+
+   ⚠️ 还有一条铁律：绝对不要改 .aplayer-lrc p 的 height / line-height。
+      APlayer 的歌词滚动是 JS 写死的 translateY(16 * -index)，
+      每行固定按 16px 步进；而 p 上的 height/line-height:16px 带 !important。
+      改了行高，步进和实际行高就对不上，歌词会越滚越偏。
+      字号可以随便改（<=16px 就行），行高不能碰。
+   ========================================================================== */
+
+/* ==========================================================================
+   1. 悬浮按钮
+   ========================================================================== */
+
+/* 位置说明：Live2D 看板娘停在左下角，所以播放器整体放在右下角，
+   并且 left 方向留出 70px 避开 Butterfly 的 #rightside 按钮列
+   （#rightside 显示时占据距右边缘 10px ~ 45px）。
+   拖动后位置由 JS 写 inline style 覆盖，这里的值是"初始位置"。 */
+.el-music-toggle {
+  position: fixed;
+  right: 70px;
+  bottom: 18px;
+  z-index: 90;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+
+  border: 1px solid var(--el-glass-border);
+  border-radius: 50%;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: var(--el-shadow-2);
+  color: var(--el-violet);
+
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* 圆钮可以拖。touch-action: none 是必须的 ——
+     不写的话触摸设备上浏览器会把这一划当成滚动页面，
+     pointermove 根本不会连续触发，拖动会"断"。 */
+  touch-action: none;
+  transition: transform 0.4s var(--el-ease-back), box-shadow 0.4s var(--el-ease),
+    background 0.35s var(--el-ease), color 0.35s var(--el-ease);
+}
+
+.el-music-toggle:hover {
+  transform: translateY(-4px) scale(1.06);
+  background: var(--el-grad-main);
+  color: #fff;
+  box-shadow: 0 14px 30px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.42);
+}
+
+.el-music-toggle:active {
+  transform: scale(0.96);
+}
+
+.el-music-toggle svg {
+  transition: transform 0.4s var(--el-ease);
+}
+
+/* 未加载时呼吸提示，引导第一次点击 */
+.el-music-toggle:not(.is-playing):not(.is-loading)::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid hsla(var(--accent-hue), 100%, 81%, 0.55);
+  animation: el-pulse-glow 2.6s ease-out infinite;
+  pointer-events: none;
+}
+
+/* 播放中：图标缓慢旋转，像转动的唱片 */
+.el-music-toggle.is-playing {
+  background: var(--el-grad-main);
+  color: #fff;
+  box-shadow: 0 12px 30px hsla(var(--accent-hue), 100%, 81%, 0.5);
+}
+
+.el-music-toggle.is-playing svg {
+  animation: el-disc-spin 3.6s linear infinite;
+}
+
+/* 加载中 */
+.el-music-toggle.is-loading svg {
+  animation: el-disc-spin 1s linear infinite;
+}
+
+.el-music-toggle.is-loading {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+/* 拖动中：不要让 hover 的上浮/放大跟着一起动，否则手感很飘 */
+.el-music-toggle[data-dragging] {
+  transform: none;
+  cursor: grabbing;
+}
+
+@keyframes el-disc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   2. 展开面板
+   ========================================================================== */
+
+.el-music-panel {
+  position: fixed;
+  right: 70px;
+  bottom: 80px;
+  z-index: 91;
+
+  width: 360px;
+  max-width: calc(100vw - 88px);
+  max-height: calc(100vh - 140px);
+  overflow: hidden;
+
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-lg);
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: var(--el-shadow-3);
+
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(16px) scale(0.97);
+  transform-origin: bottom right;
+  transition: opacity 0.34s var(--el-ease), transform 0.34s var(--el-ease),
+    visibility 0s linear 0.34s;
+}
+
+body.el-music-open .el-music-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.34s var(--el-ease), transform 0.34s var(--el-ease),
+    visibility 0s;
+}
+
+/* 标题栏是拖动把手 */
+.el-music-panel__head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--el-hairline);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 拖动中：全局光标变抓紧，并且禁用文本选中，
+   否则拖快点会把标题文字一起选上，出现难看的蓝色高亮。 */
+body.el-music-dragging,
+body.el-music-dragging .el-music-panel__head {
+  cursor: grabbing;
+}
+
+body.el-music-dragging {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.el-music-dragging .el-music-panel__close {
+  cursor: pointer;
+}
+
+/* 把手上的小横条：hover 时浮现，暗示这里能拖 */
+.el-music-panel__head::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  width: 26px;
+  height: 3px;
+  margin-left: -13px;
+  border-radius: 999px;
+  background: var(--el-hairline);
+  opacity: 0;
+  transition: opacity 0.3s var(--el-ease);
+}
+
+.el-music-panel:hover .el-music-panel__head::before {
+  opacity: 1;
+}
+
+.el-music-panel__title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.el-music-panel__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--el-text-mute);
+  cursor: pointer;
+  transition: transform 0.3s var(--el-ease-back), background 0.3s var(--el-ease),
+    color 0.3s var(--el-ease);
+}
+
+.el-music-panel__close:hover {
+  transform: rotate(90deg);
+  background: hsla(var(--accent-hue), 100%, 81%, 0.18);
+  color: var(--el-sakura-deep);
+}
+
+.el-music-panel__hint {
+  padding: 16px 16px 18px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--el-text-mute);
+}
+
+.el-music-panel__hint.is-error {
+  /* 语义色，固定红：不跟 --accent-hue 走，原因见 custom.css 里 --el-danger 的注释 */
+  color: var(--el-danger);
+}
+
+/* 面板出现时把播放器内容淡入 */
+.el-music-player {
+  padding: 8px;
+}
+
+body.el-music-open .el-music-player {
+  animation: el-fade-up 0.5s 0.06s var(--el-ease) both;
+}
+
+/* ==========================================================================
+   3. APlayer 外观覆写（全部用 #el-music-player 前缀压特异度）
+   ========================================================================== */
+
+#el-music-player .aplayer {
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: var(--el-radius-md);
+  font-family: inherit;
+  color: var(--el-text);
+}
+
+#el-music-player .aplayer-body {
+  padding: 6px;
+}
+
+/* 封面 */
+#el-music-player .aplayer-pic {
+  border-radius: var(--el-radius-sm);
+  box-shadow: var(--el-shadow-1);
+}
+
+#el-music-player .aplayer-pic:hover {
+  transform: scale(1.04);
+}
+
+/* 曲名 / 艺术家 —— APlayer 原本是 .aplayer .aplayer-info .aplayer-music
+   .aplayer-title 这种 (0,3,0) 的选择器，只有 ID 前缀压得住。 */
+#el-music-player .aplayer-title {
+  font-weight: 700;
+  color: var(--el-text);
+}
+
+#el-music-player .aplayer-author {
+  color: var(--el-text-mute);
+}
+
+/* 进度条 */
+#el-music-player .aplayer-bar-wrap {
+  padding: 3px 0;
+}
+
+#el-music-player .aplayer-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--el-hairline);
+}
+
+#el-music-player .aplayer-loaded {
+  height: 4px;
+  border-radius: 999px;
+  background: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35);
+}
+
+#el-music-player .aplayer-played {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--el-grad-main) !important;
+}
+
+#el-music-player .aplayer-thumb {
+  width: 11px;
+  height: 11px;
+  margin-top: -3.5px;
+  box-shadow: 0 0 0 3px hsla(var(--accent-hue), 100%, 81%, 0.25);
+  background: #fff !important;
+}
+
+/* 音量条 */
+#el-music-player .aplayer-volume-bar-wrap {
+  height: 4px;
+  border-radius: 999px;
+}
+
+#el-music-player .aplayer-volume-bar {
+  border-radius: 999px;
+}
+
+#el-music-player .aplayer-volume {
+  border-radius: 999px;
+  background: var(--el-grad-main) !important;
+}
+
+/* 控制图标 */
+#el-music-player .aplayer-icon {
+  color: var(--el-violet);
+  transition: transform 0.3s var(--el-ease-back), color 0.3s var(--el-ease);
+}
+
+#el-music-player .aplayer-icon:hover {
+  transform: scale(1.15);
+  color: var(--el-sakura-deep);
+}
+
+#el-music-player .aplayer-time {
+  color: var(--el-text-mute);
+}
+
+/* 播放列表 */
+#el-music-player .aplayer-list {
+  max-height: 200px;
+  border-top: 1px solid var(--el-hairline);
+}
+
+#el-music-player .aplayer-list ol {
+  max-height: 200px;
+}
+
+#el-music-player .aplayer-list li {
+  height: 34px;
+  line-height: 34px;
+  padding: 0 12px;
+  border-radius: var(--el-radius-sm);
+  background: transparent;
+  color: var(--el-text-soft);
+  transition: background 0.25s var(--el-ease), color 0.25s var(--el-ease),
+    transform 0.25s var(--el-ease);
+}
+
+#el-music-player .aplayer-list li:hover {
+  background: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.12);
+  color: var(--el-text);
+  transform: translateX(3px);
+}
+
+#el-music-player .aplayer-list-light,
+#el-music-player .aplayer-list li.aplayer-list-light:hover {
+  border-radius: var(--el-radius-sm);
+  background: linear-gradient(120deg, hsla(var(--accent-hue), 100%, 81%, 0.24), hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.2));
+  color: var(--el-text);
+}
+
+#el-music-player .aplayer-list-index {
+  color: var(--el-text-mute);
+}
+
+#el-music-player .aplayer-list-light .aplayer-list-index {
+  color: var(--el-sakura-deep);
+  font-weight: 700;
+}
+
+#el-music-player .aplayer-list-cur {
+  background: var(--el-sakura) !important;
+}
+
+#el-music-player .aplayer-list-author {
+  color: var(--el-text-mute);
+}
+
+/* -------------------------------------------------------------------------
+   歌词区
+   ------------------------------------------------------------------------- */
+
+/* 默认高度只有 30px（约两行），提到 68px 能看见四行出头，
+   滚动时上下文更清楚。容器高度不影响 16px 的逐行步进。 */
+#el-music-player .aplayer-lrc {
+  height: 68px;
+  margin: 2px 0 6px;
+  text-align: center;
+}
+
+/* APlayer 自带的两条渐隐遮罩是**写死的白色**
+   （before: 顶部 10%，after: 底部 33%）。
+   深色模式下白雾会糊在玻璃面板上非常突兀，所以这里换成面板自身的底色，
+   视觉上就是歌词从面板背景里淡入淡出。 */
+#el-music-player .aplayer-lrc::before {
+  top: 0;
+  height: 26%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0));
+}
+
+#el-music-player .aplayer-lrc::after {
+  bottom: 0;
+  height: 34%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.82));
+}
+
+/* white-space: nowrap 是这里最要紧的一条。
+   APlayer 给 .aplayer-lrc-current 设了 height:auto，
+   长歌词一旦折行，那一行就变成 32px 高，而 JS 仍然按 16px 步进 ——
+   结果是当前行之后的所有歌词整体错位。禁止折行才能保证对得上。 */
+#el-music-player .aplayer-lrc p {
+  font-size: 13px;
+  color: var(--el-text-soft);
+  text-shadow: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#el-music-player .aplayer-lrc p.aplayer-lrc-current {
+  font-size: 14px;
+  color: var(--el-sakura-deep);
+  font-weight: 700;
+  text-shadow: 0 0 14px hsla(var(--accent-hue), 100%, 81%, 0.55);
+}
+
+/* ==========================================================================
+   4. 收起状态的当前歌词
+   ========================================================================== */
+
+.el-music-now {
+  position: fixed;
+  z-index: 89;
+  max-width: 46vw;
+  padding: 5px 12px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: 999px;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  box-shadow: var(--el-shadow-1);
+  color: var(--el-text-soft);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.35s var(--el-ease), transform 0.35s var(--el-ease);
+}
+
+.el-music-now.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ==========================================================================
+   5. 深色模式
+   ========================================================================== */
+
+[data-theme='dark'] .el-music-toggle:not(.is-playing)::after {
+  border-color: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.55);
+}
+
+[data-theme='dark'] #el-music-player .aplayer-thumb {
+  background: hsl(calc(var(--accent-hue) - 37), 100%, 92%) !important;
+}
+
+[data-theme='dark'] #el-music-player .aplayer-list li:hover {
+  background: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.2);
+}
+
+[data-theme='dark'] .el-music-panel__hint.is-error {
+  color: var(--el-danger-dark);
+}
+
+/* 深色下面板底色是 rgba(26,28,48,.82)，渐隐遮罩跟着走 */
+[data-theme='dark'] #el-music-player .aplayer-lrc::before {
+  background: linear-gradient(180deg, rgba(26, 28, 48, 0.9), rgba(26, 28, 48, 0));
+}
+
+[data-theme='dark'] #el-music-player .aplayer-lrc::after {
+  background: linear-gradient(180deg, rgba(26, 28, 48, 0), rgba(26, 28, 48, 0.9));
+}
+
+[data-theme='dark'] #el-music-player .aplayer-lrc p.aplayer-lrc-current {
+  color: hsl(var(--accent-hue), 100%, 86%);
+  text-shadow: 0 0 16px hsla(var(--accent-hue), 100%, 81%, 0.45);
+}
+
+/* ==========================================================================
+   6. 移动端 / 降级
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+  .el-music-toggle {
+    right: 62px;
+    bottom: 12px;
+    width: 44px;
+    height: 44px;
+  }
+
+  /* 左右同时定位：右侧避开 #rightside，左侧不越出屏幕。
+     注意这是"初始位置" —— 一旦用户拖动过，
+     JS 会写 inline 的 left/top/width 把它锁死（见 music.js 里的注释）。 */
+  .el-music-panel {
+    left: 12px;
+    right: 62px;
+    bottom: 66px;
+    width: auto;
+    max-width: none;
+    max-height: 62vh;
+  }
+
+  #el-music-player .aplayer-list ol {
+    max-height: 30vh;
+  }
+
+  .el-music-now {
+    max-width: 60vw;
+    font-size: 11.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-music-toggle.is-playing svg,
+  .el-music-toggle:not(.is-playing):not(.is-loading)::after {
+    animation: none;
+  }
+
+  .el-music-now {
+    transition: none;
+  }
+}
+
+/* 不支持 backdrop-filter：面板退回不透明，否则歌词会糊在背景图上 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .el-music-panel,
+  .el-music-now {
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  [data-theme='dark'] .el-music-panel,
+  [data-theme='dark'] .el-music-now {
+    background: rgba(24, 25, 44, 0.97);
+  }
+}
