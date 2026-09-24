@@ -3,10 +3,15 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: EndlessLoop
-subtitle: ''
-description: ''
+title: EndlessLoop 
+subtitle: Code & Life
+description: EndlessLoop's Blog
 keywords:
+  - python
+  - java
+  - Computer Science
+  - GitHub
+  - Hexo
 author: EndlessLiu
 language: zh-CN
 timezone: ''
@@ -96,11 +101,11 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: fluid
+theme: butterfly
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: git
   repo: https://github.com/EndlessLiu/EndlessLiu.github.io.git
-  branch: main
+  branch: master

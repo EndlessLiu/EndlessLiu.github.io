@@ -1,0 +1,470 @@
+/* ==========================================================================
+   EndlessLoop · 外观设置面板（由 source/js/appearance.js 注入）
+   --------------------------------------------------------------------------
+   这一层只做一件事：把"改外观"这件事从抽象配置变成手上能拖的东西。
+   面板里的每个控件都必须**立刻可见地生效**，不放空转的开关。
+
+   ⚠️ 面板为什么不能挂在 #rightside 里面（两条都是硬的，不是洁癖）
+   1) `#rightside.rightside-show` 上是 `transform: translate(-58px, 0)`
+      —— 有 transform 的祖先会成为 fixed 后代的**包含块**，
+         面板会跟着按钮列一起被推到屏幕外，right/left 全部失效。
+   2) 同一个 transform（以及 `opacity: .8`）会让 #rightside 成为 **backdrop root**，
+         面板自己的 backdrop-filter 就采不到背后的页面了 ——
+         表现是"玻璃突然变成一块半透明色块"。
+   所以面板由 JS 直接 append 到 <body>，与触发按钮只有逻辑关联、没有 DOM 嵌套。
+
+   加载顺序：本文件必须排在 custom.css / vision.css **之后**。
+   它要覆盖 custom.css 里 `#rightside > div > button` 的既有样式，
+   同特异性下靠加载顺序取胜 —— 比堆 !important 干净。
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. 触发按钮（注入在 #rightside-config-show 里，跟着其它圆钮一起排）
+   -------------------------------------------------------------------------- */
+
+/* 常态给一点强调色的暗示，但别抢 #go-up 的视觉重心：
+   只在图标上着色，圆底仍然是 #rightside 那套玻璃。 */
+#el-dock-btn i {
+  color: var(--el-accent-ink);
+}
+
+/* 面板打开时按钮保持"按下"的强调态，否则用户不知道面板是从哪冒出来的 */
+#el-dock-btn[aria-expanded='true'] {
+  background: var(--el-grad-main) !important;
+  color: #fff !important;
+}
+
+#el-dock-btn[aria-expanded='true'] i {
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+   2. 面板本体
+   -------------------------------------------------------------------------- */
+
+.el-dock {
+  position: fixed;
+  /* 右边缘留 3.75rem：让开 #rightside 那一列（它显示时占距右缘 10~45px） */
+  right: 3.75rem;
+  /* 下边缘留 5.4rem：让开右下角的音乐播放器（right: 70px; bottom: 18px，高 50px）*/
+  bottom: 5.4rem;
+  z-index: 101; /* 高于 #rightside 的 100，低于主题的弹窗层 */
+  width: min(21rem, calc(100vw - 5rem));
+
+  padding: 1.05rem 1.15rem 1.2rem;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-xl);
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+  box-shadow: var(--el-shadow-3), inset 0 1px 0 var(--el-liquid-inset);
+
+  /* 关闭态用 display: none 彻底移出渲染树 ——
+     只做 opacity: 0 的话，backdrop-filter 仍然会持续参与合成，白付性能。 */
+  display: none;
+  transform-origin: bottom right;
+}
+
+.el-dock.is-open {
+  display: block;
+  animation: el-dock-in 0.3s var(--el-ease-back) both;
+}
+
+@keyframes el-dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.el-dock__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+/* 标题走 alethein 的 eyebrow 体例：小字号 + 大写字距 + 强调色。
+   颜色用 --el-accent-ink 而不是 --el-sakura：后者 L=81%，当文字读不清。 */
+.el-dock__title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--el-accent-ink);
+}
+
+.el-dock__dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--el-grad-main);
+  box-shadow: 0 0 0 1px var(--el-glass-border);
+}
+
+.el-dock__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--el-hairline);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--el-text-mute);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s var(--el-ease), border-color 0.2s var(--el-ease);
+}
+
+.el-dock__close:hover {
+  color: var(--el-accent-ink);
+  border-color: var(--el-sakura);
+}
+
+/* --------------------------------------------------------------------------
+   3. 分节
+   -------------------------------------------------------------------------- */
+
+.el-set {
+  padding-top: 0.85rem;
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--el-hairline);
+}
+
+.el-set:first-of-type {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: 0;
+}
+
+.el-set__label {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--el-text-soft);
+}
+
+/* --------------------------------------------------------------------------
+   4. 色相滑块
+   -------------------------------------------------------------------------- */
+
+.el-hue__top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+
+/* 轨道画成完整色环：拖的时候能直接看见"往左是暖、往右是冷"，
+   比一根灰槽好懂得多。这是唯一一处"写死全部色相"的地方，而且是故意的。 */
+.el-hue__input {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  margin: 0;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    hsl(0, 100%, 81%) 0%,
+    hsl(60, 100%, 81%) 16.6%,
+    hsl(120, 100%, 81%) 33.3%,
+    hsl(180, 100%, 81%) 50%,
+    hsl(240, 100%, 81%) 66.6%,
+    hsl(300, 100%, 81%) 83.3%,
+    hsl(360, 100%, 81%) 100%
+  );
+  cursor: pointer;
+}
+
+/* 滑块手柄：白底 + 当前色相的描边，所以它本身就是"当前颜色"的指示器 */
+.el-hue__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--el-sakura-deep);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px hsla(var(--accent-hue), 60%, 35%, 0.35);
+  cursor: grab;
+}
+
+.el-hue__input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--el-sakura-deep);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px hsla(var(--accent-hue), 60%, 35%, 0.35);
+  cursor: grab;
+}
+
+.el-hue__input:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.el-hue__out {
+  min-width: 2.9rem;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--el-accent-ink);
+}
+
+.el-hue__bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.el-swatches {
+  display: flex;
+  flex: 1;
+  gap: 0.4rem;
+}
+
+/* 预设色板：每个圆点固定一个色相，用 --el-swatch-h 传进来。
+   这里 **不要** 用 var(--accent-hue) —— 它就是"别的色相"的样板。 */
+.el-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--el-glass-bg-strong);
+  border-radius: 50%;
+  background: hsl(var(--el-swatch-h), 100%, 81%);
+  box-shadow: 0 1px 4px hsla(var(--el-swatch-h), 60%, 35%, 0.28);
+  cursor: pointer;
+  transition: transform 0.25s var(--el-ease-back);
+}
+
+.el-swatch:hover {
+  transform: translateY(-2px) scale(1.08);
+}
+
+/* 选中态用"外圈"表达，不做位移 —— 和 hover 区分得开 */
+.el-swatch[aria-pressed='true'] {
+  box-shadow: 0 0 0 2px var(--el-glass-bg-strong),
+    0 0 0 4px hsl(var(--el-swatch-h), 90%, 62%);
+}
+
+.el-reset {
+  flex: none;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid var(--el-hairline);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--el-text-mute);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s var(--el-ease), border-color 0.2s var(--el-ease);
+}
+
+.el-reset:hover {
+  color: var(--el-accent-ink);
+  border-color: var(--el-sakura);
+}
+
+/* --------------------------------------------------------------------------
+   5. 分段控件（显示模式）
+   -------------------------------------------------------------------------- */
+
+.el-seg {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: hsla(var(--accent-hue), 40%, 45%, 0.1);
+}
+
+.el-seg > button {
+  flex: 1;
+  padding: 0.4rem 0.2rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--el-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.25s var(--el-ease), color 0.25s var(--el-ease);
+}
+
+.el-seg > button:hover {
+  color: var(--el-accent-ink);
+}
+
+/* 选中态：底色用主色（L 81% 的亮色），文字就必须压暗 ——
+   白字写在 81% 亮度的底上对比度只有 ~1.9:1，基本读不出来。 */
+.el-seg > button[aria-pressed='true'] {
+  background: var(--el-sakura);
+  color: hsl(var(--accent-hue), 55%, 24%);
+  box-shadow: var(--el-shadow-1);
+}
+
+/* 置灰态。禁用走原生 disabled 属性（不是加 class）—— 键盘和读屏都能正确跳过，
+   视觉只是跟上。用它的地方：面板里"本页根本没有对应元素"的开关，
+   见 appearance.js 的 syncFxUI / syncLayoutUI。 */
+.el-seg > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 压掉 hover 变色，否则鼠标划过时禁用态看起来还是能点的 */
+.el-seg > button:disabled:hover {
+  color: var(--el-text-soft);
+}
+
+/* --------------------------------------------------------------------------
+   6. 开关行（特效）
+   -------------------------------------------------------------------------- */
+
+.el-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.32rem 0;
+  color: var(--el-text-soft);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.el-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 轨道 */
+.el-switch em {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  border: 1px solid var(--el-hairline);
+  border-radius: 999px;
+  background: hsla(var(--accent-hue), 30%, 45%, 0.16);
+  transition: background 0.28s var(--el-ease), border-color 0.28s var(--el-ease);
+}
+
+/* 滑块 */
+.el-switch em::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px hsla(var(--accent-hue), 40%, 25%, 0.35);
+  transition: transform 0.28s var(--el-ease-back);
+}
+
+.el-switch input:checked + em {
+  background: var(--el-sakura);
+  border-color: var(--el-sakura-deep);
+}
+
+.el-switch input:checked + em::after {
+  transform: translateX(16px);
+}
+
+/* 键盘可达性：隐藏了原生 input，必须自己补焦点环 */
+.el-switch input:focus-visible + em {
+  box-shadow: 0 0 0 3px hsla(var(--accent-hue), 90%, 65%, 0.45);
+}
+
+.el-switch input:disabled + em {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.el-switch__note {
+  margin-top: 0.15rem;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--el-text-mute);
+}
+
+/* --------------------------------------------------------------------------
+   7. 特效开关的落点
+   --------------------------------------------------------------------------
+   开关本身只负责在 <html> 上写 data 属性（见 appearance.js 的 applyGradient /
+   applySakura），真正的生效方式按特效的形态分两路：
+
+   - **CSS 画的一律用属性选择器关掉**（下面的 .el-beam）。这类特效本来就是
+     DOM 元素 + CSS 动画，把元素移出渲染树即可，不需要去改 vision.js。
+   - **canvas 画的必须走 JS**（樱花粒子），CSS 关不掉 ——
+     所以那一项在 appearance.js 里调的是 EL_FX.setParticles，不在这里。
+
+   属性挂在 <html> 而不是 <body>：<body> 上的 class 由主题的 pjax/换页逻辑
+   动来动去，<html> 上的 data 属性没人碰，是干净的位置。
+   -------------------------------------------------------------------------- */
+
+html[data-fx-gradient='off'] .el-beam {
+  display: none;
+}
+
+/* 波浪已实装（阶段 4，见 custom.css 第 5b 节与 vision.js 的 initHero）。
+   关掉它得到的是"首屏图直接硬接到内容区"—— 一个直边，不是故障态，
+   所以这里只做显隐，不提供任何替代装饰。
+   与上面两条的区别：这条只在**首页**有对象（.el-hero-waves 由 initHero 注入），
+   内页上开关会被置灰，见 appearance.js 的 syncFxUI。 */
+html[data-fx-waves='off'] .el-hero-waves {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   8. 降级与响应式（三件套：backdrop 兜底 / 减少动效 / 窄屏）
+   -------------------------------------------------------------------------- */
+
+/* 不支持 backdrop-filter 时退回不透明底，否则玻璃=全透明、文字读不清 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .el-dock {
+    background: rgba(255, 255, 255, 0.97);
+  }
+
+  [data-theme='dark'] .el-dock {
+    background: rgba(20, 21, 38, 0.97);
+  }
+}
+
+/* custom.css 里已有一条 * 的全局压制，这里只补"元素级"的：
+   入场动画结束后必须停在 transform: none，否则面板自己成了 backdrop root、
+   玻璃会失效（同 #rightside 那条坑，只是方向相反）。 */
+@media (prefers-reduced-motion: reduce) {
+  .el-dock.is-open {
+    animation: none;
+    transform: none;
+  }
+
+  .el-swatch:hover {
+    transform: none;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  /* 窄屏上贴边铺开：从右缘留 0.75rem 改成两侧都留，宽度交给 left/right 撑 */
+  .el-dock {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 4.8rem;
+    width: auto;
+    border-radius: var(--el-radius-lg);
+  }
+}

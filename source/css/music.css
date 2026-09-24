@@ -69,7 +69,7 @@
   transform: translateY(-4px) scale(1.06);
   background: var(--el-grad-main);
   color: #fff;
-  box-shadow: 0 14px 30px rgba(167, 139, 250, 0.42);
+  box-shadow: 0 14px 30px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.42);
 }
 
 .el-music-toggle:active {
@@ -86,7 +86,7 @@
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 158, 196, 0.55);
+  border: 2px solid hsla(var(--accent-hue), 100%, 81%, 0.55);
   animation: el-pulse-glow 2.6s ease-out infinite;
   pointer-events: none;
 }
@@ -95,7 +95,7 @@
 .el-music-toggle.is-playing {
   background: var(--el-grad-main);
   color: #fff;
-  box-shadow: 0 12px 30px rgba(255, 158, 196, 0.5);
+  box-shadow: 0 12px 30px hsla(var(--accent-hue), 100%, 81%, 0.5);
 }
 
 .el-music-toggle.is-playing svg {
@@ -239,7 +239,7 @@ body.el-music-dragging .el-music-panel__close {
 
 .el-music-panel__close:hover {
   transform: rotate(90deg);
-  background: rgba(255, 158, 196, 0.18);
+  background: hsla(var(--accent-hue), 100%, 81%, 0.18);
   color: var(--el-sakura-deep);
 }
 
@@ -251,7 +251,8 @@ body.el-music-dragging .el-music-panel__close {
 }
 
 .el-music-panel__hint.is-error {
-  color: #e0567a;
+  /* 语义色，固定红：不跟 --accent-hue 走，原因见 custom.css 里 --el-danger 的注释 */
+  color: var(--el-danger);
 }
 
 /* 面板出现时把播放器内容淡入 */
@@ -315,7 +316,7 @@ body.el-music-open .el-music-player {
 #el-music-player .aplayer-loaded {
   height: 4px;
   border-radius: 999px;
-  background: rgba(167, 139, 250, 0.35);
+  background: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35);
 }
 
 #el-music-player .aplayer-played {
@@ -328,7 +329,7 @@ body.el-music-open .el-music-player {
   width: 11px;
   height: 11px;
   margin-top: -3.5px;
-  box-shadow: 0 0 0 3px rgba(255, 158, 196, 0.25);
+  box-shadow: 0 0 0 3px hsla(var(--accent-hue), 100%, 81%, 0.25);
   background: #fff !important;
 }
 
@@ -384,7 +385,7 @@ body.el-music-open .el-music-player {
 }
 
 #el-music-player .aplayer-list li:hover {
-  background: rgba(167, 139, 250, 0.12);
+  background: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.12);
   color: var(--el-text);
   transform: translateX(3px);
 }
@@ -392,7 +393,7 @@ body.el-music-open .el-music-player {
 #el-music-player .aplayer-list-light,
 #el-music-player .aplayer-list li.aplayer-list-light:hover {
   border-radius: var(--el-radius-sm);
-  background: linear-gradient(120deg, rgba(255, 158, 196, 0.24), rgba(167, 139, 250, 0.2));
+  background: linear-gradient(120deg, hsla(var(--accent-hue), 100%, 81%, 0.24), hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.2));
   color: var(--el-text);
 }
 
@@ -457,7 +458,7 @@ body.el-music-open .el-music-player {
   font-size: 14px;
   color: var(--el-sakura-deep);
   font-weight: 700;
-  text-shadow: 0 0 14px rgba(255, 158, 196, 0.55);
+  text-shadow: 0 0 14px hsla(var(--accent-hue), 100%, 81%, 0.55);
 }
 
 /* ==========================================================================
@@ -497,19 +498,19 @@ body.el-music-open .el-music-player {
    ========================================================================== */
 
 [data-theme='dark'] .el-music-toggle:not(.is-playing)::after {
-  border-color: rgba(167, 139, 250, 0.55);
+  border-color: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.55);
 }
 
 [data-theme='dark'] #el-music-player .aplayer-thumb {
-  background: #d8d4ff !important;
+  background: hsl(calc(var(--accent-hue) - 37), 100%, 92%) !important;
 }
 
 [data-theme='dark'] #el-music-player .aplayer-list li:hover {
-  background: rgba(167, 139, 250, 0.2);
+  background: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.2);
 }
 
 [data-theme='dark'] .el-music-panel__hint.is-error {
-  color: #ff8fb0;
+  color: var(--el-danger-dark);
 }
 
 /* 深色下面板底色是 rgba(26,28,48,.82)，渐隐遮罩跟着走 */
@@ -522,8 +523,8 @@ body.el-music-open .el-music-player {
 }
 
 [data-theme='dark'] #el-music-player .aplayer-lrc p.aplayer-lrc-current {
-  color: #ffb8d4;
-  text-shadow: 0 0 16px rgba(255, 158, 196, 0.45);
+  color: hsl(var(--accent-hue), 100%, 86%);
+  text-shadow: 0 0 16px hsla(var(--accent-hue), 100%, 81%, 0.45);
 }
 
 /* ==========================================================================

@@ -39,7 +39,13 @@
     // 移动端是否展示（默认关闭：小屏遮挡内容，且渲染开销大）
     mobileDisplay: false,
 
-    // 主题色，跟随站点主色
+    /* 主题色。⚠️ 这里是**故意保留的死值**：看板娘已下架（_config.butterfly.yml 里
+       注入 live2d-init.js 的那行 inject.bottom 已删），这个文件当前根本不会被执行，
+       所以它不参与"色相滑块必须覆盖全站"那条规则。
+       将来若恢复看板娘，**必须**把这一行一起改成从 :root 读：
+         getComputedStyle(document.documentElement).getPropertyValue('--el-sakura').trim()
+       同一个文件里 :121 的 errorColor: '#F08080' 是语义红（报错必须显红），
+       和 --el-danger 同类，恢复时**不要**染成色相派生。 */
     primaryColor: '#ff9ec4',
 
     // 入场动画时长（ms）

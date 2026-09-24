@@ -159,9 +159,19 @@ post_meta:
 # The top_img settings of home page
 # default: top img - full screen, site info - middle
 # The position of site info, eg: 300px/300em/300rem/10%
+# 留空 = 用主题默认的 300px。**首页满屏 hero 下这个值必须失效** ——
+# .full_page #site-info 是 position: absolute; top: $index_site_info_top，
+# 在 100vh 的盒子里固定从顶部数 300px，会明显偏上而不是居中。
+# 但这里不能填百分比（100vh 下 50% 会随视口漂），所以交给 CSS：
+# custom.css 里把 #site-info 改回 static，用父级 flex 列居中（同时也避开
+# 任何 transform —— 那会切断玻璃卡的 backdrop-filter 采样）。
 index_site_info_top:
 # The height of top_img, eg: 300px/300em/300rem
-index_top_img_height: 400px
+# 满屏 hero。这是**唯一**能通过配置改到的 hero 高度（内页 .post-bg /
+# .not-home-page 在主题源码里写死 400px，只能 CSS 覆盖，见阶段 6）。
+# 用 vh 而不是 svh：主题源码里 .full_page 还挂着 background-attachment: fixed，
+# 移动端地址栏收放时 vh 会跳，由 custom.css 的 @supports (height: 100svh) 兜住。
+index_top_img_height: 100vh
 
 # The subtitle on homepage
 subtitle:
@@ -1095,6 +1105,16 @@ css_prefix: true
 # --------------------------------------
 theme_color:
   enable: true
+  # meta_theme_color_light / _dark 是浏览器 UI（移动端地址栏）的着色。
+  # 主题的取值逻辑是 `enable ? meta_theme_color_light : '#ffffff'`，
+  # 也就是说 enable: true 但这两个值是注释状态时，取到的是 undefined ——
+  # 内联脚本会把 content 写成字符串 "undefined"（实测产物里就是这样）。
+  # 所以这两行必须显式给值，不能靠注释里的默认值。
+  # 值是默认色相 286 下的页面底色 hsl(286 30% 96%) / hsl(286 30% 10%)，
+  # 跟着 :root 的 --accent-hue 走；换 hue 时这两个不会跟着变（它们是构建期
+  # 由 Stylus 编进 HTML 的），但作为"浏览器边框色"偏差很小，可以接受。
+  meta_theme_color_light: '#f6f2f8'
+  meta_theme_color_dark: '#1e1221'
   main: '#ff9ec4'
   paginator: '#a78bfa'
   text_selection: '#ff9ec4'
@@ -1115,6 +1135,33 @@ inject:
     - <link rel="stylesheet" href="/css/music.css">
     # vision.css 必须排在 custom.css 之后：它扩充令牌与背景层
     - <link rel="stylesheet" href="/css/vision.css">
+    # appearance.css 排在最后：它要覆写 custom.css 里 #rightside 按钮的既有样式
+    - <link rel="stylesheet" href="/css/appearance.css">
+    # ---- 抢在首次绘制之前把外观状态落下去 ----
+    # 为什么必须内联在 <head>、不能等 bottom 的 appearance.js：
+    # 等脚本执行时第一帧已经画完了，用户会先看见默认色相/默认主题闪一下再跳变。
+    # 位置由 head.pug 保证：inject_head_js（主题自己的暗色初始化）在第 60 行，
+    # injectHead 在第 77 行 —— 我们的脚本**在主题之后**跑，不会互相抢。
+    # 因此这里只做两件主题不管的事：
+    #   1) 覆写 --accent-hue（定义权在 custom.css 的 :root，这里只改值）；
+    #   2) "跟随系统"：主题的 autoChangeMode 是 false，它对"没有 theme 键"
+    #      这个状态不干预，所以由我们补位。
+    - |
+      <script>
+      (function () {
+        try {
+          var r = document.documentElement, ls = window.localStorage;
+
+          var h = parseInt(ls.getItem('el-accent-hue'), 10);
+          if (!isNaN(h) && h >= 0 && h <= 360) r.style.setProperty('--accent-hue', String(h));
+
+          if (ls.getItem('el-theme-mode') === 'auto' && ls.getItem('theme') === null) {
+            var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+            if (mq) r.dataset.theme = mq.matches ? 'dark' : 'light';
+          }
+        } catch (e) { /* 隐私模式 / 沙箱里 localStorage 会抛，静默退回默认外观 */ }
+      })();
+      </script>
   bottom:
     - <script src="/js/site-fx.js"></script>
     - <script src="/js/music.js"></script>
@@ -1123,6 +1170,10 @@ inject:
     # 都还在磁盘上未删除，想恢复只需把下面这行加回来：
     #   - <script src="/js/live2d-init.js"></script>
     - <script src="/js/vision.js"></script>
+    # appearance.js 必须排在最后：它要读 site-fx.js 的 window.EL_FX / EL_CAPS
+    # （樱花开关真正的作用点是 EL_FX.setParticles），并要在 vision.js 注入完
+    # .el-beam 之后才能判断"背景流光"这个开关有没有对象可关。
+    - <script src="/js/appearance.js"></script>
 
 # CDN Settings
 # Don't modify the following settings unless you know how they work

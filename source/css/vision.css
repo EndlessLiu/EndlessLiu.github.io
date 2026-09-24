@@ -174,23 +174,12 @@
   box-shadow: inset 0 1px 0 var(--el-liquid-inset), var(--el-shadow-2);
 }
 
-/* 导航栏：::before 空闲，放一条顶部镜面高光 */
-#nav {
-  backdrop-filter: blur(var(--el-glass-blur)) saturate(180%) brightness(1.06);
-  -webkit-backdrop-filter: blur(var(--el-glass-blur)) saturate(180%) brightness(1.06);
-  box-shadow: inset 0 1px 0 var(--el-liquid-inset), 0 4px 24px rgba(38, 40, 74, 0.07);
-}
-
-#nav::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60%;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0));
-}
+/* 导航栏：原来这里有一份 `#nav` 的 backdrop-filter + 一条 `#nav::before` 顶部高光。
+   两者现已全部并入 custom.css 的「4. 顶部导航栏 —— 居中悬浮胶囊」一节，删掉。
+   原因不是审美：custom.css 后加载，它原来那条
+   `background: rgba(255,255,255,0.42) !important` 本就压住了这里的 backdrop-filter，
+   于是两条 blur（12px 与 --el-glass-blur）里只有一条生效，另一条是死代码 ——
+   这正是滚动后导航观感"和设计值对不上"的来源。同一个选择器统一到一处。 */
 
 /* 页脚 */
 #footer {
@@ -205,18 +194,18 @@
 
 #rightside > div > button:hover,
 #rightside > div > a:hover {
-  box-shadow: inset 0 1px 0 var(--el-liquid-edge), 0 10px 24px rgba(167, 139, 250, 0.4);
+  box-shadow: inset 0 1px 0 var(--el-liquid-edge), 0 10px 24px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.4);
 }
 
 /* GitHub 按钮 */
 #card-info-btn {
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 22px rgba(167, 139, 250, 0.32);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 8px 22px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.32);
 }
 
 #card-info-btn:hover {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 14px 32px rgba(255, 158, 196, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 14px 32px hsla(var(--accent-hue), 100%, 81%, 0.45);
 }
 
 /* 分页按钮 */
@@ -227,7 +216,7 @@
 
 #pagination .page-number:hover,
 #pagination .extend:hover {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 10px 24px rgba(167, 139, 250, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 10px 24px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.34);
 }
 
 /* 液态按压：按下时轻微回缩 + 内发光变强，模拟玻璃被压下的形变。
@@ -268,13 +257,13 @@
   /* 渐变描边环：用一个 conic 渐变做底，中间被 img 盖住只露出 4px 边 */
   background: conic-gradient(
     from 0deg,
-    #ff9ec4,
-    #a78bfa,
-    #6ec8ff,
-    #5eead4,
-    #ff9ec4
+    hsl(var(--accent-hue), 100%, 81%),
+    hsl(calc(var(--accent-hue) - 37), 92%, 76%),
+    hsl(calc(var(--accent-hue) - 74), 100%, 72%),
+    hsl(calc(var(--accent-hue) - 110), 77%, 64%),
+    hsl(var(--accent-hue), 100%, 81%)
   );
-  box-shadow: 0 10px 30px rgba(167, 139, 250, 0.38);
+  box-shadow: 0 10px 30px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.38);
   transition: transform 0.9s var(--el-ease), box-shadow 0.5s var(--el-ease);
 }
 
@@ -296,7 +285,7 @@
 
 #aside-content .card-info .avatar-img:hover {
   transform: rotate(360deg) scale(1.05);
-  box-shadow: 0 14px 40px rgba(255, 158, 196, 0.55);
+  box-shadow: 0 14px 40px hsla(var(--accent-hue), 100%, 81%, 0.55);
 }
 
 /* 缓慢自转的柔光，让头像"发亮" */
@@ -305,7 +294,7 @@
   position: absolute;
   inset: -6px;
   border-radius: 50%;
-  background: conic-gradient(from 0deg, transparent 0 60%, rgba(255, 158, 196, 0.5) 80%, transparent 100%);
+  background: conic-gradient(from 0deg, transparent 0 60%, hsla(var(--accent-hue), 100%, 81%, 0.5) 80%, transparent 100%);
   filter: blur(6px);
   z-index: -1;
   animation: el-halo-spin 7s linear infinite;
@@ -405,7 +394,7 @@
 #aside-content .card-info .card-info-social-icons .social-icon:hover {
   transform: translateY(-4px) scale(1.08);
   background: var(--el-glass-bg-strong);
-  box-shadow: inset 0 1px 0 var(--el-liquid-edge), 0 10px 22px rgba(167, 139, 250, 0.35);
+  box-shadow: inset 0 1px 0 var(--el-liquid-edge), 0 10px 22px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35);
 }
 
 /* 主题给 .card-info-social-icons i 设了 hover 旋转 360°，
@@ -463,7 +452,7 @@ i.el-icon-xhs {
 
 /* 顶部渐变条发光（一期已画了 3px 渐变条，这里加光晕） */
 #article-container figure.highlight::before {
-  box-shadow: 0 0 18px rgba(167, 139, 250, 0.65);
+  box-shadow: 0 0 18px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.65);
 }
 
 /* 代码区叠一层极淡的扫描线，做出"终端屏幕"的质感。
@@ -492,8 +481,8 @@ i.el-icon-xhs {
 #article-container figure.highlight .gutter {
   background: linear-gradient(
     180deg,
-    rgba(167, 139, 250, 0.14),
-    rgba(255, 158, 196, 0.05) 60%,
+    hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.14),
+    hsla(var(--accent-hue), 100%, 81%, 0.05) 60%,
     transparent
   );
   border-right: 1px solid var(--el-hairline);
@@ -505,7 +494,7 @@ i.el-icon-xhs {
 
 /* 行内代码微光 */
 #article-container code:not([class*='language-']) {
-  box-shadow: inset 0 0 0 1px rgba(255, 158, 196, 0.16);
+  box-shadow: inset 0 0 0 1px hsla(var(--accent-hue), 100%, 81%, 0.16);
 }
 
 /* ==========================================================================
@@ -553,14 +542,14 @@ i.el-icon-xhs {
   stroke-linecap: round;
   stroke-dasharray: 100.53;
   stroke-dashoffset: 100.53;
-  filter: drop-shadow(0 0 4px rgba(255, 158, 196, 0.85));
+  filter: drop-shadow(0 0 4px hsla(var(--accent-hue), 100%, 81%, 0.85));
   transition: stroke-dashoffset 0.15s linear, stroke 0.4s var(--el-ease);
 }
 
 /* 接近底部时环变成紫→青，给出"快读完了"的暗示 */
 #rightside #go-up.is-near-bottom .el-ring__fg {
   stroke: var(--el-mint);
-  filter: drop-shadow(0 0 5px rgba(94, 234, 212, 0.9));
+  filter: drop-shadow(0 0 5px hsla(calc(var(--accent-hue) - 110), 77%, 64%, 0.9));
 }
 
 #rightside #go-up:hover .el-ring__fg {
@@ -636,7 +625,7 @@ i.el-icon-xhs {
 .el-giscus-placeholder code {
   padding: 1px 6px;
   border-radius: 5px;
-  background: rgba(255, 158, 196, 0.16);
+  background: hsla(var(--accent-hue), 100%, 81%, 0.16);
   color: var(--el-sakura-deep);
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 0.92em;
@@ -660,10 +649,10 @@ i.el-icon-xhs {
   width: 34px;
   height: 34px;
   margin: -17px 0 0 -17px;
-  border: 1.5px solid rgba(255, 158, 196, 0.6);
+  border: 1.5px solid hsla(var(--accent-hue), 100%, 81%, 0.6);
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 70%);
-  box-shadow: 0 0 12px rgba(255, 158, 196, 0.4);
+  box-shadow: 0 0 12px hsla(var(--accent-hue), 100%, 81%, 0.4);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s var(--el-ease), width 0.3s var(--el-ease-back),
@@ -681,8 +670,8 @@ body.el-cursor-on.el-cursor-hot #el-cursor-ring {
   width: 22px;
   height: 22px;
   margin: -11px 0 0 -11px;
-  border-color: rgba(167, 139, 250, 0.95);
-  box-shadow: 0 0 16px rgba(167, 139, 250, 0.6);
+  border-color: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.95);
+  box-shadow: 0 0 16px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.6);
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -703,7 +692,7 @@ body.el-cursor-on.el-cursor-hot #el-cursor-ring {
 .el-ripple-wave {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.75), rgba(255, 158, 196, 0.28) 60%, transparent 72%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.75), hsla(var(--accent-hue), 100%, 81%, 0.28) 60%, transparent 72%);
   transform: scale(0);
   opacity: 0.9;
   pointer-events: none;
@@ -726,8 +715,8 @@ body.el-cursor-on.el-cursor-hot #el-cursor-ring {
   background: linear-gradient(
     105deg,
     transparent 40%,
-    rgba(167, 139, 250, 0.4) 48%,
-    rgba(110, 200, 255, 0.2) 53%,
+    hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.4) 48%,
+    hsla(calc(var(--accent-hue) - 74), 100%, 72%, 0.2) 53%,
     transparent 62%
   );
 }
@@ -753,13 +742,17 @@ body.el-cursor-on.el-cursor-hot #el-cursor-ring {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent);
 }
 
+/* 深色下统计项 hover：底色是 accent 渐变，文字要压成深色才读得出。
+   ⚠️ 原值是写死的 #1a1b2e（hsl(240,26%,14%)，一个偏紫的近黑）。
+   这里跟色相走（-37 是 violet 家族，240 正落在那一档）——
+   色相拖到绿色系时，"绿底压紫字"会明显发脏。 */
 [data-theme='dark'] #aside-content .card-info .site-data > a:hover .headline,
 [data-theme='dark'] #aside-content .card-info .site-data > a:hover .length-num {
-  color: #1a1b2e;
+  color: hsl(calc(var(--accent-hue) - 37), 26%, 14%);
 }
 
 [data-theme='dark'] .el-ripple-wave {
-  background: radial-gradient(circle, rgba(167, 139, 250, 0.7), rgba(167, 139, 250, 0.24) 60%, transparent 72%);
+  background: radial-gradient(circle, hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.7), hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.24) 60%, transparent 72%);
 }
 
 /* ==========================================================================

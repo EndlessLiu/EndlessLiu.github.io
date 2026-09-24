@@ -41,6 +41,23 @@
   // 鼠标光晕：需要精确指针
   var FX_CURSOR = FX_PARTICLES && finePointer;
 
+  /* 用户偏好：樱花 / 光斑粒子。
+     两个概念必须分清 ——
+       FX_PARTICLES = 这台设备**能不能**跑（能力上限，用户改不了）
+       FX_SAKURA    = 用户**想不想要**（外观面板里可切）
+     FX_SAKURA 只决定"建好之后要不要开跑"，**不决定建不建**。
+     不这样分的话，开关一旦被关掉就再也没有入口把它打开了（画布根本没建）。
+     必须在模块求值期读：这是初始状态，晚读一步就得先建好再拆。 */
+  function readFxPref(key) {
+    try {
+      return localStorage.getItem(key) !== 'off';
+    } catch (err) {
+      return true; // 隐私模式/沙箱里读不到 localStorage，按"开"处理
+    }
+  }
+
+  var FX_SAKURA = FX_PARTICLES && readFxPref('el-fx-sakura');
+
   var DPR_CAP = lowCores ? 1.5 : 2;
 
   /* ---------------------------------------------------------------------
@@ -172,8 +189,52 @@
      粒子 + 光晕画布
      --------------------------------------------------------------------- */
 
+  /* 调色板不再写死：从 :root 的色相令牌现读（--el-sakura / --el-violet / --el-sky / --el-mint）。
+     为什么绕一圈用 canvas 归一化：自定义属性的计算值在各浏览器格式不统一
+     （可能回 hsl(286, 100%, 81%)，也可能回 hsl(286 100% 81%)），
+     而 fillStyle 是标准化的 —— 写进去 hsl()、读出来一定是 #rrggbb 或 rgb(...)。
+     fillStyle 赋非法值时会被静默忽略、保留上一次的值，所以先写 #000 再写目标色。
+     兜底用白色而不是某个品牌色：这里写死的任何颜色都会变成色相滑块够不到的残留。 */
+  var COLOR_TOKENS = {
+    sakura: '--el-sakura',
+    violet: '--el-violet',
+    sky: '--el-sky',
+    mint: '--el-mint'
+  };
+
+  function readAccentColors() {
+    var cs = getComputedStyle(document.documentElement);
+    var probe = document.createElement('canvas').getContext('2d');
+    var out = {};
+
+    Object.keys(COLOR_TOKENS).forEach(function (key) {
+      var raw = cs.getPropertyValue(COLOR_TOKENS[key]).trim();
+      if (!raw) {
+        out[key] = '255,255,255';
+        return;
+      }
+      probe.fillStyle = '#000';
+      probe.fillStyle = raw;
+      var hex = String(probe.fillStyle);
+      var m = /^#([0-9a-f]{6})$/i.exec(hex);
+      if (m) {
+        var n = parseInt(m[1], 16);
+        out[key] = ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+        return;
+      }
+      m = /rgb\((\d+)\D+(\d+)\D+(\d+)\)/.exec(hex); // 极老浏览器
+      out[key] = m ? m[1] + ',' + m[2] + ',' + m[3] : '255,255,255';
+    });
+
+    return out;
+  }
+
   function initCanvas() {
     if (!FX_PARTICLES) return;
+
+    /* 防重复挂载：将来开 pjax 后换页会再跑一次 boot()，
+       不挡住就会叠出第二块全屏画布（两份 rAF，双倍开销）。 */
+    if (document.getElementById('fx-canvas')) return;
 
     var canvas = document.createElement('canvas');
     canvas.id = 'fx-canvas';
@@ -186,7 +247,27 @@
       return;
     }
 
-    var COLORS = ['255,158,196', '167,139,250', '110,200,255', '94,234,212'];
+    /* 四色从色相令牌现读（见文件上方的 readAccentColors）。
+       C 保留命名索引，鼠标光晕要按名字取 violet / sakura；COLORS 只给 pickColor 随机用。 */
+    var C = readAccentColors();
+    var COLORS = [C.sakura, C.violet, C.sky, C.mint];
+
+    /* 色相变了之后重新取色。外观面板拖色相时经 window.EL_FX 调它。
+       ⚠️ glowSprites 是按颜色字符串做键缓存的离屏贴图，颜色一变必须清空，
+       否则光斑还是老颜色。 */
+    function refreshColors() {
+      C = readAccentColors();
+      COLORS = [C.sakura, C.violet, C.sky, C.mint];
+      glowSprites = {};
+    }
+
+    /* 对外接口。setParticles 是**函数声明**，写在下面 start/stop 旁边 ——
+       声明会提升，所以这里可以先引用、后定义。 */
+    window.EL_FX = {
+      refreshColors: refreshColors,
+      // 外观面板的"樱花光斑"开关走这里：粒子是 canvas + rAF，CSS 关不掉
+      setParticles: setParticles
+    };
 
     /* 三层景深。数量、尺寸、速度、透明度都分层，
        近景慢而大、远景小而快，合起来才有纵深，
@@ -205,6 +286,8 @@
     var near = [];
     var rafId = null;
     var running = false;
+    // 粒子是否开启（初始值来自模块求值期读到的用户偏好）
+    var sakuraOn = FX_SAKURA;
 
     // 鼠标光晕状态
     var pointer = { x: 0, y: 0, active: false };
@@ -310,9 +393,10 @@
       // 注意：只在 active 时创建渐变，否则每帧都会白分配一个
       if (FX_CURSOR && pointer.active) {
         var glow = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 260);
-        glow.addColorStop(0, 'rgba(167,139,250,0.20)');
-        glow.addColorStop(0.45, 'rgba(255,158,196,0.09)');
-        glow.addColorStop(1, 'rgba(167,139,250,0)');
+        // 色从 C 现取（原先写死的是 violet / sakura，透明度原样保留）
+        glow.addColorStop(0, 'rgba(' + C.violet + ',0.20)');
+        glow.addColorStop(0.45, 'rgba(' + C.sakura + ',0.09)');
+        glow.addColorStop(1, 'rgba(' + C.violet + ',0)');
         ctx.fillStyle = glow;
         ctx.fillRect(pointer.x - 260, pointer.y - 260, 520, 520);
       }
@@ -400,6 +484,23 @@
       ctx.clearRect(0, 0, w, h);
     }
 
+    /* 外观面板开关的落点。关掉时**停 rAF 和藏画布两件都要做**：
+       只停 rAF → 画布上留着最后一帧的残影；
+       只藏不画 → rAF 还在每帧空转，白烧 CPU。
+       打开时重新 seed 一次，让粒子回到随机分布 —— 否则会接着上次停的位置继续飘，
+       看起来像"卡住了"。 */
+    function setParticles(on) {
+      sakuraOn = !!on;
+      canvas.style.display = sakuraOn ? '' : 'none';
+
+      if (sakuraOn) {
+        seed();
+        start();
+      } else {
+        stop();
+      }
+    }
+
     // 鼠标移动：只记录坐标，绘制统一在 rAF 里做。
     // 走全局指针总线，不再自己 addEventListener（见文件头说明）。
     if (FX_CURSOR) {
@@ -425,7 +526,8 @@
     // 标签页不可见时停掉动画，省电
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) stop();
-      else start();
+      // 回前台时只有在"用户也开着"的情况下才恢复，否则会把面板关掉的粒子又拉起来
+      else if (sakuraOn) start();
     });
 
     var resizeTimer = null;
@@ -439,7 +541,13 @@
 
     resize();
     seed();
-    start();
+    /* 初始就按用户偏好决定跑不跑。关掉时把画布藏起来 ——
+       否则它虽然没画，那块透明区域仍然参与命中测试与合成。 */
+    if (sakuraOn) {
+      start();
+    } else {
+      canvas.style.display = 'none';
+    }
   }
 
   /* ---------------------------------------------------------------------

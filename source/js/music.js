@@ -44,6 +44,23 @@
 
   window.EL_MUSIC = EL_MUSIC;
 
+  /* APlayer 的主题色（驱动播放器的进度条 / 音量条 / 播放列表当前项高亮）。
+     不写死颜色 —— 从 :root 的 --el-sakura 现读，这样色相滑块拖走之后播放器内部也跟着走。
+
+     为什么可以直接用计算值、不做归一化：aplayer 拿到这个串是**原样拼进内联样式**的
+     （`background: <theme>` / `style.backgroundColor = <theme>`，见 lib/aplayer.min.js），
+     不做任何字符串裁剪或加 alpha 后缀，所以 hsl()/rgb() 都合法。
+     这也是这一处最容易漏的原因 —— 它藏在第三方库的配置对象里，
+     查 CSS 的字面量残留时完全扫不到。 */
+  function accentTheme() {
+    var v = getComputedStyle(document.documentElement).getPropertyValue('--el-sakura').trim();
+    /* 读不到时兜底给 currentColor，而不是写一份"默认粉"的副本 ——
+       副本一旦和 :root 里的值漂移，就变成了第二处需要同步的真相。
+       （正常情况下读不到是不可能的：--el-sakura 定义在 custom.css 的 :root 里，
+         不依赖 JS、不依赖任何运行时状态。） */
+    return v || 'currentColor';
+  }
+
   /* ---------------------------------------------------------------------
      能力判断
      --------------------------------------------------------------------- */
@@ -483,7 +500,7 @@
         player = new window.APlayer({
           container: playerBox,
           audio: audio,
-          theme: '#ff9ec4',
+          theme: accentTheme(),
           lrcType: 3,
           listFolded: false,
           listMaxHeight: '200px',
