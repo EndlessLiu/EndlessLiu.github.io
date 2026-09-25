@@ -1,0 +1,269 @@
+/* ==========================================================================
+   EndlessLoop · 关于页个人简介样式
+   --------------------------------------------------------------------------
+   依赖 custom.css 的设计令牌（--el-*）。
+   结构写在 source/about/index.md，正文 h2 复用 custom.css 里
+   #article-container h2 的渐变竖条，这里只管名片卡和列表。
+   ========================================================================== */
+
+.el-about {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   名片卡
+   ========================================================================== */
+
+.el-about-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 34px 38px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-xl);
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: var(--el-shadow-3), inset 0 1px 0 var(--el-liquid-inset);
+  overflow: hidden;
+}
+
+/* 镜面高光 */
+.el-about-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--el-liquid-sheen);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.el-about-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 头像：conic 渐变环，和侧栏头像同一套四色 */
+.el-about-card__avatar {
+  flex: 0 0 auto;
+  width: 122px;
+  height: 122px;
+  padding: 4px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: conic-gradient(
+    from 0deg,
+    hsl(var(--accent-hue), 100%, 81%),
+    hsl(calc(var(--accent-hue) - 37), 92%, 76%),
+    hsl(calc(var(--accent-hue) - 74), 100%, 72%),
+    hsl(calc(var(--accent-hue) - 110), 77%, 64%),
+    hsl(var(--accent-hue), 100%, 81%)
+  );
+  box-shadow: 0 10px 30px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.38);
+}
+
+.el-about-card__avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--el-glass-bg-strong);
+}
+
+.el-about-card__body {
+  min-width: 0;
+}
+
+.el-about-card__name {
+  margin: 0 0 6px;
+  font-family: 'Space Grotesk', 'DM Sans', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--el-text);
+}
+
+.el-about-card__slogan {
+  margin: 0 0 16px;
+  font-size: 1.02rem;
+  color: var(--el-text-soft);
+}
+
+.el-about-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.el-about-tag {
+  padding: 4px 12px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: 999px;
+  background: hsla(var(--accent-hue), 100%, 81%, 0.1);
+  color: var(--el-violet);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background 0.25s var(--el-ease), color 0.25s var(--el-ease);
+}
+
+.el-about-tag:hover {
+  background: var(--el-grad-main);
+  color: #fff;
+}
+
+.el-about-card__social {
+  display: flex;
+  gap: 10px;
+}
+
+.el-about-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 50%;
+  background: var(--el-glass-bg-soft);
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset);
+  color: var(--el-text-soft);
+  font-size: 1.05rem;
+  transition: transform 0.3s var(--el-ease-back), background 0.3s var(--el-ease),
+    color 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease);
+}
+
+.el-about-social:hover {
+  transform: translateY(-4px) scale(1.08);
+  background: var(--el-grad-main);
+  color: #fff;
+  box-shadow: 0 10px 22px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35);
+}
+
+.el-about-social i.el-icon-xhs {
+  font-size: 1.12em;
+  vertical-align: -0.12em;
+}
+
+/* ==========================================================================
+   列表（正在做 / 喜欢的）
+   ========================================================================== */
+
+.el-about-list {
+  display: grid;
+  gap: 12px;
+}
+
+.el-about-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--el-shadow-1);
+  transition: transform 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease),
+    border-color 0.3s var(--el-ease);
+}
+
+.el-about-item:hover {
+  transform: translateY(-3px);
+  border-color: hsla(var(--accent-hue), 100%, 81%, 0.5);
+  box-shadow: var(--el-shadow-2);
+}
+
+.el-about-item > i {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--el-grad-main);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.el-about-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.el-about-item__text strong {
+  color: var(--el-text);
+  font-size: 0.98rem;
+}
+
+.el-about-item__text span {
+  color: var(--el-text-mute);
+  font-size: 0.86rem;
+}
+
+/* 喜欢的：更轻量的胶囊，图标不套渐变底 */
+.el-about-list--likes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.el-about-list--likes .el-about-item {
+  padding: 10px 18px;
+  border-radius: 999px;
+}
+
+.el-about-list--likes .el-about-item:hover {
+  transform: translateY(-3px);
+}
+
+.el-about-list--likes .el-about-item > i {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--el-sakura-deep);
+  font-size: 1rem;
+}
+
+.el-about-list--likes .el-about-item > span {
+  color: var(--el-text-soft);
+  font-size: 0.92rem;
+}
+
+/* ==========================================================================
+   响应式
+   ========================================================================== */
+
+@media screen and (max-width: 768px) {
+  .el-about-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 28px 22px;
+  }
+
+  .el-about-card__avatar {
+    width: 104px;
+    height: 104px;
+  }
+
+  .el-about-card__tags,
+  .el-about-card__social {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-about-item,
+  .el-about-social,
+  .el-about-tag {
+    transition: none;
+  }
+}
