@@ -682,14 +682,29 @@
      启动
      --------------------------------------------------------------------- */
 
-  /* 打开主页时自动加载并播放（浏览器可能因"无用户交互"拦截自动播放，
-     被拦时播放器保持暂停，用户点一下播放键即可） */
+  /* 打开主页时自动加载并播放。浏览器会拦截"无用户交互"的自动播放：
+     这里先尝试播放，若被拦（audio 仍暂停），等首次点击/按键后自动补播。 */
   function maybeAutoPlay() {
     if (!EL_MUSIC.autoPlay) return;
     if (!document.querySelector('#page-header.full_page')) return; // 只在主页
+
     loadPlayer()
       .then(function (p) {
         p.play();
+
+        /* 首次交互兜底：自动播放被拦时，第一次点页面任意处就补播 */
+        document.addEventListener(
+          'pointerdown',
+          function start(e) {
+            // 点的是播放器本身时跳过（交给它自己的按钮，避免重复触发）
+            var onCard =
+              e.target && e.target.closest && e.target.closest('#el-music-toggle');
+            if (onCard) return;
+            if (p.audio && p.audio.paused) p.play();
+            document.removeEventListener('pointerdown', start);
+          },
+          { passive: true }
+        );
       })
       .catch(function () {
         /* 加载失败已在面板提示，这里静默 */
