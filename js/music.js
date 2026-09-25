@@ -42,7 +42,11 @@
     // 公共 API，失效时可换自建地址
     api: 'https://api.i-meto.com/meting/api',
 
-    volume: 0.7
+    volume: 0.7,
+
+    // 打开主页时自动播放。浏览器可能因"无用户交互"拦截自动播放，
+    // 被拦截时播放器保持暂停，用户点一下播放键即可（见 maybeAutoPlay）。
+    autoPlay: true
   };
 
   window.EL_MUSIC = EL_MUSIC;
@@ -420,6 +424,7 @@
         }
       }
       pointerId = null;
+      checkDock();
     }
 
     handle.addEventListener('pointerup', end);
@@ -441,6 +446,7 @@
       el.style.left = left + 'px';
       el.style.top = top + 'px';
     });
+    checkDock();
   }
 
   function restorePositions() {
@@ -480,6 +486,16 @@
       item.el.style.width = w + 'px';
       item.el.style.maxWidth = 'none';
     });
+    checkDock();
+  }
+
+  /* 靠边自动隐藏：卡片拖到屏幕左右边缘时淡出，悬停恢复 */
+  function checkDock() {
+    if (!toggle) return;
+    var rect = toggle.getBoundingClientRect();
+    var threshold = 24; // 距左右边缘 < 24px 算"靠边"
+    var docked = rect.left < threshold || window.innerWidth - rect.right < threshold;
+    toggle.classList.toggle('is-docked', docked);
   }
 
   /* ---------------------------------------------------------------------
@@ -666,11 +682,27 @@
      启动
      --------------------------------------------------------------------- */
 
+  /* 打开主页时自动加载并播放（浏览器可能因"无用户交互"拦截自动播放，
+     被拦时播放器保持暂停，用户点一下播放键即可） */
+  function maybeAutoPlay() {
+    if (!EL_MUSIC.autoPlay) return;
+    if (!document.querySelector('#page-header.full_page')) return; // 只在主页
+    loadPlayer()
+      .then(function (p) {
+        p.play();
+      })
+      .catch(function () {
+        /* 加载失败已在面板提示，这里静默 */
+      });
+  }
+
   function boot() {
     if (document.getElementById('el-music-toggle')) return; // pjax 重复挂载保护
     buildUI();
     restorePositions();
+    checkDock();
     window.addEventListener('resize', reclampAll, { passive: true });
+    maybeAutoPlay();
   }
 
   if (document.readyState === 'loading') {

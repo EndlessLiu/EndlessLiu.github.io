@@ -63,7 +63,16 @@
   -webkit-user-select: none;
 
   transition: transform 0.4s var(--el-ease), box-shadow 0.4s var(--el-ease),
-    border-color 0.4s var(--el-ease);
+    border-color 0.4s var(--el-ease), opacity 0.35s var(--el-ease);
+}
+
+/* 靠边自动隐藏：拖到屏幕左右边缘后淡出，悬停恢复 */
+.el-music-mini.is-docked {
+  opacity: 0.15;
+}
+
+.el-music-mini.is-docked:hover {
+  opacity: 1;
 }
 
 /* 镜面高光（左上到右下的液态玻璃 sheen） */
