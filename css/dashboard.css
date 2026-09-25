@@ -1,0 +1,219 @@
+/* ==========================================================================
+   EndlessLoop · 首页仪表盘（打卡热力图 + 倒计时 + 每日一言）
+   --------------------------------------------------------------------------
+   结构由 source/js/dashboard.js 注入，依赖 custom.css 的玻璃拟态令牌。
+   ========================================================================== */
+
+.el-dashboard {
+  margin-bottom: 24px;
+}
+
+.el-dashboard__head {
+  margin-bottom: 18px;
+}
+
+.el-dashboard__title {
+  margin: 0;
+  font-family: 'Space Grotesk', 'DM Sans', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--el-text);
+}
+
+.el-dashboard__sub {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: var(--el-text-mute);
+}
+
+/* ---- 通用卡片 ---- */
+.el-dashboard__card {
+  position: relative;
+  padding: 22px 24px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-lg);
+  background: var(--el-glass-bg);
+  backdrop-filter: blur(12px) saturate(170%);
+  -webkit-backdrop-filter: blur(12px) saturate(170%);
+  box-shadow: var(--el-shadow-1), inset 0 1px 0 var(--el-liquid-inset);
+  overflow: hidden;
+}
+
+/* ---- 热力图 ---- */
+.el-dashboard__heatmap {
+  overflow-x: auto; /* 窄屏时热力图可横向滚动，不被裁切 */
+}
+
+.hmap {
+  position: relative;
+}
+
+.hmap__months {
+  position: relative;
+  height: 16px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: var(--el-text-mute);
+}
+
+.hmap__months span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.hmap__grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 11px);
+  grid-auto-columns: 11px;
+  gap: 3px;
+  width: max-content;
+}
+
+.hmap__cell {
+  display: block;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: var(--el-hairline);
+}
+
+.hmap-l1 {
+  background: hsla(var(--accent-hue), 100%, 81%, 0.28);
+}
+
+.hmap-l2 {
+  background: hsla(var(--accent-hue), 100%, 76%, 0.52);
+}
+
+.hmap-l3 {
+  background: hsla(var(--accent-hue), 100%, 72%, 0.78);
+}
+
+.hmap-l4 {
+  background: hsl(var(--accent-hue), 100%, 70%);
+  box-shadow: 0 0 6px hsla(var(--accent-hue), 100%, 76%, 0.55);
+}
+
+.hmap__legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--el-text-mute);
+}
+
+.hmap__legend .hmap__cell {
+  width: 11px;
+  height: 11px;
+}
+
+.hmap__legend-text {
+  margin: 0 2px;
+}
+
+/* ---- 两个小组件 ---- */
+.el-dashboard__widgets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+/* 考研倒计时 */
+.el-cd {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.el-cd__label {
+  font-size: 0.9rem;
+  color: var(--el-text-mute);
+}
+
+.el-cd__main {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.el-cd__days {
+  font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+  font-size: 3.2rem;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.el-cd__unit {
+  font-size: 1rem;
+  color: var(--el-text-soft);
+}
+
+.el-cd__time {
+  margin-top: 8px;
+  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  color: var(--el-text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.el-cd__target {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--el-text-mute);
+}
+
+/* 每日一言 */
+.el-quote {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.el-quote__label {
+  font-size: 0.9rem;
+  color: var(--el-text-mute);
+}
+
+.el-quote__text {
+  position: relative;
+  margin: 14px 0 0;
+  padding-left: 18px;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--el-text-soft);
+}
+
+.el-quote__text::before {
+  content: '“';
+  position: absolute;
+  left: 0;
+  top: -6px;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--el-sakura-deep);
+  opacity: 0.8;
+}
+
+/* ---- 响应式 ---- */
+@media screen and (max-width: 768px) {
+  .el-dashboard__widgets {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hmap-l4 {
+    box-shadow: none;
+  }
+}
