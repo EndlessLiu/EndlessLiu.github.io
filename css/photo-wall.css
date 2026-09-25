@@ -1,0 +1,247 @@
+/* ==========================================================================
+   EndlessLoop · 照片墙样式
+   --------------------------------------------------------------------------
+   依赖 custom.css 的设计令牌（--el-*）。
+   结构由 scripts/photo-wall.js 的 {% photowall %} 标签输出，
+   筛选 / 灯箱交互由 source/js/photo-wall.js 驱动。
+   ========================================================================== */
+
+/* ---- 分类筛选条 ---- */
+.photo-wall__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0 26px;
+}
+
+.photo-wall__tab {
+  padding: 7px 16px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: 999px;
+  background: var(--el-glass-bg-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--el-text-soft);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.3s var(--el-ease), color 0.3s var(--el-ease),
+    border-color 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease),
+    transform 0.3s var(--el-ease-back);
+}
+
+.photo-wall__tab:hover {
+  transform: translateY(-2px);
+  color: var(--el-sakura-deep);
+  border-color: hsla(var(--accent-hue), 100%, 81%, 0.55);
+}
+
+.photo-wall__tab.is-active {
+  background: var(--el-grad-main);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 20px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.4);
+}
+
+.photo-wall__tab:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+/* ---- 照片网格 ---- */
+.photo-wall__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.photo-wall__item {
+  position: relative;
+  margin: 0;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-lg);
+  background: var(--el-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--el-shadow-1), inset 0 1px 0 var(--el-liquid-inset);
+  overflow: hidden;
+  cursor: zoom-in;
+  transition: transform 0.4s var(--el-ease), box-shadow 0.4s var(--el-ease),
+    border-color 0.4s var(--el-ease);
+}
+
+.photo-wall__item.is-hidden {
+  display: none;
+}
+
+.photo-wall__item:hover {
+  transform: translateY(-6px);
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--el-shadow-3), var(--el-shadow-glow),
+    inset 0 1px 0 var(--el-liquid-edge);
+}
+
+.photo-wall__frame {
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--el-grad-main); /* 图片加载前的兜底底色 */
+}
+
+.photo-wall__frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--el-ease);
+}
+
+.photo-wall__item:hover .photo-wall__frame img {
+  transform: scale(1.08);
+}
+
+/* caption：悬浮时从底部淡入 */
+.photo-wall__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 30px 12px 10px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.35s var(--el-ease), transform 0.35s var(--el-ease);
+}
+
+.photo-wall__item:hover .photo-wall__caption {
+  opacity: 1;
+  transform: none;
+}
+
+.photo-wall__empty {
+  text-align: center;
+  padding: 44px 0;
+  color: var(--el-text-mute);
+  font-size: 13px;
+}
+
+/* ---- 灯箱 ---- */
+.photo-wall-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(8, 9, 18, 0.86);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s var(--el-ease), visibility 0s linear 0.28s;
+}
+
+.photo-wall-lightbox.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.28s var(--el-ease), visibility 0s;
+}
+
+.photo-wall-lightbox__stage {
+  position: relative;
+  max-width: min(92vw, 1080px);
+  max-height: 84vh;
+}
+
+.photo-wall-lightbox__img {
+  display: block;
+  max-width: 100%;
+  max-height: 78vh;
+  margin: 0 auto;
+  border-radius: var(--el-radius-md);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  object-fit: contain;
+}
+
+.photo-wall-lightbox__caption {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.photo-wall-lightbox__btn {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.25s var(--el-ease), transform 0.25s var(--el-ease-back);
+}
+
+.photo-wall-lightbox__btn:hover {
+  background: rgba(255, 255, 255, 0.26);
+  transform: scale(1.1);
+}
+
+.photo-wall-lightbox__btn:focus-visible {
+  outline: 2px solid var(--el-sakura);
+  outline-offset: 2px;
+}
+
+.photo-wall-lightbox__close {
+  top: 18px;
+  right: 20px;
+}
+
+.photo-wall-lightbox__prev {
+  top: 50%;
+  left: 20px;
+  margin-top: -23px;
+}
+
+.photo-wall-lightbox__next {
+  top: 50%;
+  right: 20px;
+  margin-top: -23px;
+}
+
+/* 窄屏：左右切换键贴到边缘内侧，避免和内容打架 */
+@media screen and (max-width: 768px) {
+  .photo-wall-lightbox {
+    padding: 12px;
+  }
+
+  .photo-wall-lightbox__prev {
+    left: 8px;
+  }
+
+  .photo-wall-lightbox__next {
+    right: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-wall__item,
+  .photo-wall__tab,
+  .photo-wall__frame img,
+  .photo-wall__caption {
+    transition: none;
+  }
+}
