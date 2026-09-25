@@ -201,11 +201,16 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   拉丁字体：Nunito（可变字重 400–900，单文件）
+   拉丁字体：Space Grotesk（标题/品牌）+ DM Sans（正文），两个可变字重文件
    --------------------------------------------------------------------------
-   本地自托管，不走 CDN。文件 source/fonts/nunito-latin-var.woff2（39 KB），
-   是 Google Fonts 的 **latin 子集**，从 v32 的 URL 一次性抓下来的；
-   升级/换字体时重新抓即可（见文件头注释里的抓取方式）。
+   本地自托管，不走 CDN。文件：
+     source/fonts/space-grotesk-latin.woff2（21 KB，可变 300–700）
+     source/fonts/dm-sans-latin.woff2（36 KB，可变 400–700）
+   都是从 Google Fonts 抓取的 **latin 子集**（可变字体单文件）。
+
+   为什么换掉原来的 Nunito：Nunito 圆润友好、偏「休闲/可爱」；
+   Space Grotesk 的几何字身与怪趣细节更贴合「独立开发者 / 科技感」个人品牌，
+   DM Sans 是它官方搭配的高可读正文。两者都只覆盖拉丁，中文继续走系统栈。
 
    为什么只给拉丁：中文字体体积是另一个量级（MiSans 全量 10MB+），
    而中文本身有成熟的系统栈（微软雅黑 / 苹方 / 鸿蒙），本地自托管不划算。
@@ -213,23 +218,34 @@
    基本拉丁 + 常用标点，**不含 CJK**；落到中文时浏览器自动往字体栈下一项走，
    也就是系统中文栈。两边互不干扰、都不缺字。
 
-   可变字重：一个文件覆盖 400–900，靠 font-weight 范围声明。
+   可变字重：一个文件覆盖区间，靠 font-weight 范围声明。
    不支持可变字体的老浏览器会拿到默认字重，属于可接受的降级。 */
 @font-face {
-  font-family: 'Nunito';
+  font-family: 'Space Grotesk';
   font-style: normal;
-  font-weight: 400 900;
+  font-weight: 300 700;
   font-display: swap; /* 字体没到时先用系统字体渲染，避免文字空白 */
-  src: url('/fonts/nunito-latin-var.woff2') format('woff2');
+  src: url('/fonts/space-grotesk-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/dm-sans-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
     U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
     U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 body {
-  /* Nunito 排在最前，但它只覆盖拉丁 —— 中文由 unicode-range 让给后面的系统栈。
+  /* DM Sans 排在最前，但它只覆盖拉丁 —— 中文由 unicode-range 让给后面的系统栈。
      所以这一行同时决定了"英文长什么样"和"中文长什么样"，不需要两套规则。 */
-  font-family: 'Nunito', 'Microsoft YaHei', 'PingFang SC', 'HarmonyOS Sans SC',
+  font-family: 'DM Sans', 'Microsoft YaHei', 'PingFang SC', 'HarmonyOS Sans SC',
     -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--el-text);
   -webkit-font-smoothing: antialiased;
@@ -244,6 +260,46 @@ body {
 
 a {
   transition: color 0.25s var(--el-ease);
+}
+
+/* --------------------------------------------------------------------------
+   显示字体：Space Grotesk
+   --------------------------------------------------------------------------
+   品牌名、页面/文章标题、卡片标题用 Space Grotesk（只覆盖拉丁，中文自动落到
+   后面的系统栈）。正文数字已由 body 的 DM Sans 接管；副标题的 JetBrains Mono
+   打字机效果不动。 */
+#nav .site-name,
+#page-header #site-title,
+#page-header .post-title,
+#page-header .title-seo,
+#recent-posts .article-title,
+#article-container h1,
+#article-container h2,
+#article-container h3,
+#article-container h4,
+#article-container h5,
+#article-container h6,
+#aside-content .author-info-name,
+#aside-content .card-widget .item-headline,
+#post .post-title,
+#page .page-title,
+#pagination .pagination-related .title {
+  font-family: 'Space Grotesk', 'DM Sans', 'Microsoft YaHei', 'PingFang SC',
+    'HarmonyOS Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* 全局键盘焦点环：可访问性基线。特定组件用更高特异性的规则覆盖为精细样式。 */
+:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+/* 数字用等宽 tabular 数字，避免内容变化时抖动 */
+#recent-posts .article-meta-wrap time,
+#aside-content .card-webinfo .webinfo-count,
+#pagination .page-number,
+#pagination .extend {
+  font-variant-numeric: tabular-nums;
 }
 
 /* 渐变文字工具类 */
@@ -355,6 +411,66 @@ body:has(#page-header.full_page) #web_bg {
   z-index: -1;
   pointer-events: none;
   opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+   电影感氛围层：暗角 + 胶片颗粒（仅暗色模式）
+   --------------------------------------------------------------------------
+   两个都是固定全屏覆盖层、pointer-events:none、静态合成（无持续动画），
+   用 body 的两个空闲伪元素承载，不新增 DOM、不跑 rAF。
+   为什么只在暗色：暗色才是「电影感」主视觉；浅色保持干净，不叠颗粒。
+
+   z-index 取 9990 / 9991 —— 压在内容与固定组件之上，但低于光标环（9998）
+   和加载幕布，保证光标始终清晰。
+   -------------------------------------------------------------------------- */
+
+/* 暗角：中心透、四周压暗，营造电影画面的取景感 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse 120% 92% at 50% 42%,
+    transparent 55%,
+    rgba(0, 0, 0, 0.42) 100%
+  );
+  transition: opacity 0.4s var(--el-ease);
+}
+
+[data-theme='dark'] body::before {
+  opacity: 1;
+}
+
+/* 胶片颗粒：feTurbulence 噪点贴图 + soft-light，极低透明度 */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9991;
+  pointer-events: none;
+  opacity: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+  transition: opacity 0.4s var(--el-ease);
+}
+
+[data-theme='dark'] body::after {
+  opacity: 0.05;
+  mix-blend-mode: soft-light;
+}
+
+/* 移动端 / 省流 / 减少动效：关掉颗粒（blend 合成层在低端机上是纯开销） */
+@media screen and (max-width: 768px) {
+  body::after {
+    display: none;
+  }
+}
+
+html.no-fx body::after {
+  display: none;
 }
 
 /* ==========================================================================
@@ -482,6 +598,27 @@ body:has(#page-header.full_page) #web_bg {
 #nav #menus .menus_item > a:hover {
   color: var(--el-text);
   background: hsla(var(--accent-hue), 100%, 81%, 0.2);
+}
+
+/* 当前页：常驻高亮（淡药丸底 + 底部发光圆点），与 hover 态区分。
+   .is-current 由 vision.js 的 initNavActive() 按 URL 前缀匹配写入。 */
+#nav #menus .menus_item.is-current > a {
+  position: relative;
+  color: var(--el-text);
+  background: hsla(var(--accent-hue), 100%, 81%, 0.16);
+}
+
+#nav #menus .menus_item.is-current > a::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--el-sakura-deep);
+  box-shadow: 0 0 6px hsla(var(--accent-hue), 100%, 81%, 0.8);
 }
 
 /* 键盘可达性：药丸底是唯一的 hover 提示，所以焦点态要等效可见 */
@@ -1496,18 +1633,39 @@ html[data-content-layout='grid'] #recent-posts .recent-post-item > .recent-post-
   line-height: 1.85;
 }
 
-/* 元信息胶囊 */
+/* 元信息：日期 + 分类，flex 排布、隐藏竖线分隔符，分类做成淡胶囊 */
 #recent-posts .recent-post-item .article-meta-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
   color: var(--el-text-mute);
+  font-size: 12.5px;
+}
+
+#recent-posts .recent-post-item .article-meta-wrap .post-meta-date,
+#recent-posts .recent-post-item .article-meta-wrap .article-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 用 gap 替掉 Butterfly 的 | 分隔符 */
+#recent-posts .recent-post-item .article-meta-wrap .article-meta-separator {
+  display: none;
 }
 
 #recent-posts .recent-post-item .article-meta-wrap a {
-  color: var(--el-text-mute);
-  transition: color 0.25s var(--el-ease);
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: hsla(var(--accent-hue), 100%, 81%, 0.1);
+  color: var(--el-violet);
+  transition: color 0.25s var(--el-ease), background 0.25s var(--el-ease);
 }
 
 #recent-posts .recent-post-item .article-meta-wrap a:hover {
-  color: var(--el-sakura-deep);
+  color: #fff;
+  background: var(--el-grad-main);
 }
 
 /* ==========================================================================
@@ -2212,7 +2370,7 @@ select:focus {
 }
 
 [data-theme='dark'] #web_bg::after {
-  opacity: 0.5;
+  opacity: 0.68;
 }
 
 [data-theme='dark'] #nav {

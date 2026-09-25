@@ -193,18 +193,17 @@
     syncModeUI(mode);
   }
 
-  /* 读当前模式。**先看主题的键，再看我们的 auto 标记** —— 顺序不能反：
+  /* 读当前模式。**先看主题的键** —— 顺序不能反：
      主题自己的那枚暗色按钮（#rightside-config-hide 里）随时会写 `theme` 键，
      用户点它一下，我们的 'auto' 标记就过期了。若先看标记，面板会一直
      显示"跟随系统"高亮，而页面其实已经是用户手选的深色 ——
-     一个和页面对不上的控件比没有控件更糟。 */
+     一个和页面对不上的控件比没有控件更糟。
+     theme 键没写（首次访问 / 选了"跟随系统"）就一律当 auto，首次访问即跟随系统。 */
   function currentThemeMode() {
     var t = null;
     if (window.btf && window.btf.saveToLocal) t = window.btf.saveToLocal.get('theme');
     if (t === 'dark' || t === 'light') return t;
-    if (lsGet(KEYS.themeMode) === 'auto') return 'auto';
-    // 两个键都读不到时，以页面上实际生效的属性为准
-    return root.dataset.theme === 'dark' ? 'dark' : 'light';
+    return 'auto';
   }
 
   /* 特效开关：CSS 侧的显隐走 html 上的 data 属性（见 appearance.css 末尾），

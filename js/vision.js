@@ -254,7 +254,7 @@
     ring.setAttribute('aria-hidden', 'true');
     document.body.appendChild(ring);
 
-    var HOT = 'a, button, .social-icon, .el-music-toggle, .page-number, input, textarea, [role="button"]';
+    var HOT = 'a, button, .social-icon, .el-music-mini, .page-number, input, textarea, [role="button"]';
 
     var tx = 0;
     var ty = 0;
@@ -314,7 +314,7 @@
     '#pagination .extend',
     '#rightside > div > button',
     '#aside-content .card-info .site-data > a',
-    '.el-music-toggle',
+    '.el-music-mini__btn',
     '.el-music-panel__close',
     '#giscus-wrap a',
     '.el-giscus-placeholder a',
@@ -486,6 +486,41 @@
   });
 
   /* =====================================================================
+     导航当前页高亮
+     ===================================================================== */
+
+  /* Butterfly 桌面导航不带 active 类，这里按 URL 前缀匹配给当前项加 .is-current。
+     首页只精确匹配 /，其余菜单项用前缀匹配（/archives/ 命中 /archives/xxx）。 */
+  function initNavActive() {
+    var links = document.querySelectorAll('#nav #menus .menus_item > a.site-page[href]');
+    if (!links.length) return;
+
+    // 先清掉上次的高亮：pjax 换页时 boot() 会重跑，不清会累积两个高亮项
+    var stale = document.querySelectorAll('#nav #menus .menus_item.is-current');
+    for (var k = 0; k < stale.length; k++) stale[k].classList.remove('is-current');
+
+    var path = location.pathname.replace(/\/+$/, '') || '/';
+
+    for (var i = 0; i < links.length; i++) {
+      var a = links[i];
+      var href = a.getAttribute('href');
+      if (!href) continue;
+
+      var aPath;
+      try {
+        aPath = new URL(href, location.origin).pathname;
+      } catch (err) {
+        aPath = href;
+      }
+      aPath = aPath.replace(/\/+$/, '') || '/';
+
+      var match =
+        aPath === '/' ? path === '/' : path === aPath || path.indexOf(aPath + '/') === 0;
+      if (match && a.parentElement) a.parentElement.classList.add('is-current');
+    }
+  }
+
+  /* =====================================================================
      启动
      ===================================================================== */
 
@@ -496,6 +531,7 @@
     initGiscusGuard();
     initCursorRing();
     initRipple();
+    initNavActive();
   }
 
   onReady(boot);

@@ -1,25 +1,28 @@
 /* ==========================================================================
-   EndlessLoop · 全局悬浮音乐播放器（可拖动 / 带歌词）
+   EndlessLoop · 右侧玻璃拟态迷你音乐卡片（可拖动 / 点击展开完整播放器）
    --------------------------------------------------------------------------
-   行为：
-     右下角一个玻璃小圆钮 → 点击才下载 APlayer（约 60KB）与歌单
-     → 面板上滑展开，再点一次收起。首屏不加载任何播放器资源。
+   形态：
+     右下角一张常驻的玻璃小卡片（旋转封面唱片 + 歌名/歌手 + 进度条 + 控制键）。
+     点卡片空白处（或右上「展开」键）滑出完整 APlayer 面板（歌单 + 歌词）。
+     首屏不加载任何播放器资源 —— 第一次点「播放」才去拉 APlayer 与歌单。
 
-   二期新增：
-     - 小圆钮和面板都能拖着走，位置记在 localStorage，刷新后还在原处
-     - 收起状态下，小圆钮旁边会滚一行"当前歌词"
-     - 面板展开时是完整歌词区
+   相比旧的圆形悬浮钮，升级点：
+     - 封面：唱片样式圆形封面，播放时缓缓自转；无封面时是渐变底 + 音符
+     - 歌曲信息：歌名 + 歌手，超长自动省略
+     - 控制：上一首 / 播放暂停 / 下一首 / 展开完整播放器
+     - 进度条：实时播放进度 + 时间（读 APlayer 的 <audio> 的 currentTime/duration）
+     - 动画：唱片自转、播放态均衡器跳动、玻璃高光、液态按压
+
+   卡片与面板都能拖着走，位置记在 localStorage，刷新后还在原处。
 
    歌单来自 Meting API（把网易云 / QQ 音乐等的歌单转成可播放列表）。
-   换歌单：改下面 EL_MUSIC.id 即可，server 和 type 一般不用动。
+   换歌单：改下面 EL_MUSIC.id 即可；server / type 一般不用动。
 
    ⚠️ 公共 Meting API 是第三方免费服务，可能限流或失效。
       如果发现播放列表加载不出来，把 api 换成自建地址（部署 Meting-API 即可）。
    ⚠️ 歌词能不能显示，取决于 Meting 返回的每条 audio 里有没有 lrc 字段。
       它必须是一个 .lrc 文件的 **URL**（lrcType: 3 就是这个意思）。
-      注意 APlayer 的 lrcType 没有"数组"这一档：
-        1 = 直接给 LRC 文本，2 = LRC 写在 HTML 里，3 = 给 .lrc 的 URL。
-      这个接口不返回 lrc 的话歌词区就是空的 —— 那是接口问题，不是代码问题。
+      接口不返回 lrc 的话歌词区就是空的 —— 那是接口问题，不是代码问题。
    ========================================================================== */
 
 (function () {
@@ -46,18 +49,10 @@
 
   /* APlayer 的主题色（驱动播放器的进度条 / 音量条 / 播放列表当前项高亮）。
      不写死颜色 —— 从 :root 的 --el-sakura 现读，这样色相滑块拖走之后播放器内部也跟着走。
-
-     为什么可以直接用计算值、不做归一化：aplayer 拿到这个串是**原样拼进内联样式**的
-     （`background: <theme>` / `style.backgroundColor = <theme>`，见 lib/aplayer.min.js），
-     不做任何字符串裁剪或加 alpha 后缀，所以 hsl()/rgb() 都合法。
-     这也是这一处最容易漏的原因 —— 它藏在第三方库的配置对象里，
-     查 CSS 的字面量残留时完全扫不到。 */
+     aplayer 拿到这个串是原样拼进内联样式（`background: <theme>`），
+     不做字符串裁剪或加 alpha 后缀，所以 hsl()/rgb() 都合法。 */
   function accentTheme() {
     var v = getComputedStyle(document.documentElement).getPropertyValue('--el-sakura').trim();
-    /* 读不到时兜底给 currentColor，而不是写一份"默认粉"的副本 ——
-       副本一旦和 :root 里的值漂移，就变成了第二处需要同步的真相。
-       （正常情况下读不到是不可能的：--el-sakura 定义在 custom.css 的 :root 里，
-         不依赖 JS、不依赖任何运行时状态。） */
     return v || 'currentColor';
   }
 
@@ -65,7 +60,6 @@
      能力判断
      --------------------------------------------------------------------- */
 
-  var CAPS = window.EL_CAPS;
   var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   if (conn && conn.saveData) return; // 省流模式不打扰
 
@@ -74,33 +68,107 @@
   var DRAG_THRESHOLD = 5; // px：小于这个位移就当成点击，不是拖动
 
   /* ---------------------------------------------------------------------
+     图标（全部内联 SVG，颜色走 currentColor，跟随卡片文字色）
+     --------------------------------------------------------------------- */
+
+  var ICON = {
+    note: '<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>',
+    play: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>',
+    next: '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zM16 6h2v12h-2z"/></svg>',
+    list: '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z"/></svg>',
+    close: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.3 19.7 2.88 18.3 9.17 12 2.88 5.7 4.3 4.3l6.29 6.29 6.3-6.3z"/></svg>'
+  };
+
+  /* ---------------------------------------------------------------------
      构建 UI
      --------------------------------------------------------------------- */
 
-  var ICON_NOTE =
-    '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">' +
-    '<path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>';
-
-  var ICON_CLOSE =
-    '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">' +
-    '<path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.3 19.7 2.88 18.3 9.17 12 2.88 5.7 4.3 4.3l6.29 6.29 6.3-6.3z"/></svg>';
-
-  var toggle, panel, playerBox, hintBox, nowPlaying;
+  var toggle, panel, playerBox, hintBox;
+  var disc, coverImg, titleText, artistEl, barFill, timeEl, expandBtn;
   var player = null;
-  var loading = false;
+  var loadPromise = null;
   var open = false;
 
   function buildUI() {
-    // 悬浮按钮
-    toggle = document.createElement('button');
+    /* ---- 迷你卡片根。id 沿用 el-music-toggle：pjax 防重 + 位置记忆都靠它，
+       但样式类换成 .el-music-mini（旧圆形钮的 .el-music-toggle 类已废弃）。
+       卡片本身只是视觉容器：交互入口是里面的按钮（尤其"展开"键，键盘可达），
+       所以不给它 role/aria-label，避免变成误导性的 region 地标。 ---- */
+    toggle = document.createElement('div');
     toggle.id = 'el-music-toggle';
-    toggle.type = 'button';
-    toggle.className = 'el-music-toggle';
-    toggle.setAttribute('aria-label', '音乐播放器');
-    toggle.setAttribute('aria-expanded', 'false');
-    toggle.innerHTML = ICON_NOTE;
+    toggle.className = 'el-music-mini';
 
-    // 面板
+    // 封面唱片（外圈渐变环 + 内圈封面图 + 中心轴孔；无封面时显示音符）
+    disc = document.createElement('div');
+    disc.className = 'el-music-mini__disc';
+    disc.setAttribute('aria-hidden', 'true');
+    disc.innerHTML =
+      '<div class="el-music-mini__disc-inner">' +
+      '<img class="el-music-mini__cover" alt="" />' +
+      '<span class="el-music-mini__note">' + ICON.note + '</span>' +
+      '</div>' +
+      '<span class="el-music-mini__cap"></span>';
+    coverImg = disc.querySelector('.el-music-mini__cover');
+
+    // 信息（歌名 + 均衡器 / 歌手）+ 进度条 + 时间
+    titleText = document.createElement('span');
+    titleText.className = 'el-music-mini__title-text';
+    titleText.textContent = '音乐播放器';
+
+    var eq = document.createElement('span');
+    eq.className = 'el-music-mini__eq';
+    eq.setAttribute('aria-hidden', 'true');
+    eq.innerHTML = '<i></i><i></i><i></i>';
+
+    var titleRow = document.createElement('div');
+    titleRow.className = 'el-music-mini__title';
+    titleRow.appendChild(titleText);
+    titleRow.appendChild(eq);
+
+    artistEl = document.createElement('div');
+    artistEl.className = 'el-music-mini__artist';
+    artistEl.textContent = '点击 ▶ 播放';
+
+    barFill = document.createElement('div');
+    barFill.className = 'el-music-mini__bar-fill';
+    var bar = document.createElement('div');
+    bar.className = 'el-music-mini__bar';
+    bar.appendChild(barFill);
+
+    timeEl = document.createElement('span');
+    timeEl.className = 'el-music-mini__time';
+
+    var barRow = document.createElement('div');
+    barRow.className = 'el-music-mini__bar-row';
+    barRow.appendChild(bar);
+    barRow.appendChild(timeEl);
+
+    var body = document.createElement('div');
+    body.className = 'el-music-mini__body';
+    body.appendChild(titleRow);
+    body.appendChild(artistEl);
+    body.appendChild(barRow);
+
+    // 控制键（上一首 / 播放暂停 / 下一首 / 展开）
+    var controls = document.createElement('div');
+    controls.className = 'el-music-mini__controls';
+    controls.innerHTML =
+      '<button class="el-music-mini__btn el-music-mini__prev" type="button" data-el-music="prev" aria-label="上一首">' + ICON.prev + '</button>' +
+      '<button class="el-music-mini__btn el-music-mini__play" type="button" data-el-music="toggle" aria-label="播放 / 暂停">' +
+      '<span class="el-music-mini__ico el-music-mini__ico--play">' + ICON.play + '</span>' +
+      '<span class="el-music-mini__ico el-music-mini__ico--pause">' + ICON.pause + '</span>' +
+      '</button>' +
+      '<button class="el-music-mini__btn el-music-mini__next" type="button" data-el-music="next" aria-label="下一首">' + ICON.next + '</button>' +
+      '<button class="el-music-mini__btn el-music-mini__expand" type="button" data-el-music="expand" aria-label="展开完整播放器" aria-expanded="false">' + ICON.list + '</button>';
+    expandBtn = controls.querySelector('[data-el-music="expand"]');
+
+    toggle.appendChild(disc);
+    toggle.appendChild(body);
+    toggle.appendChild(controls);
+
+    /* ---- 完整面板（歌单 + 歌词）---- */
     panel = document.createElement('div');
     panel.className = 'el-music-panel';
     panel.setAttribute('role', 'dialog');
@@ -118,7 +186,7 @@
     closeBtn.type = 'button';
     closeBtn.className = 'el-music-panel__close';
     closeBtn.setAttribute('aria-label', '收起播放器');
-    closeBtn.innerHTML = ICON_CLOSE;
+    closeBtn.innerHTML = ICON.close;
     closeBtn.addEventListener('click', function () {
       setOpen(false);
     });
@@ -138,32 +206,63 @@
     panel.appendChild(hintBox);
     panel.appendChild(playerBox);
 
-    // 收起时贴在圆钮旁边的"当前歌词"
-    nowPlaying = document.createElement('div');
-    nowPlaying.className = 'el-music-now';
-    nowPlaying.setAttribute('aria-hidden', 'true');
-
     document.body.appendChild(toggle);
     document.body.appendChild(panel);
-    document.body.appendChild(nowPlaying);
 
     // Esc 收起
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && open) setOpen(false);
     });
 
-    // 圆钮点击：拖过就不算点击
+    // 卡片空白处点击：拖过不算、控制键不算，其余展开/收起完整面板
     toggle.addEventListener('click', function (e) {
       if (toggle.dataset.dragged === '1') {
         delete toggle.dataset.dragged;
         e.preventDefault();
         return;
       }
+      if (e.target.closest && e.target.closest('.el-music-mini__controls')) return;
       onClick();
     });
 
-    makeDraggable(toggle, toggle, STORE_BTN, null);
-    makeDraggable(head, panel, STORE_PANEL, closeBtn);
+    // 控制键集中分发。点击会冒泡到上面的卡片 click，
+    // 但被 closest('.el-music-mini__controls') 拦下，不会重复触发面板。
+    controls.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('[data-el-music]') : null;
+      if (btn) handleAction(btn.getAttribute('data-el-music'));
+    });
+
+    makeDraggable(toggle, toggle, STORE_BTN, '.el-music-mini__controls');
+    makeDraggable(head, panel, STORE_PANEL, '.el-music-panel__close');
+  }
+
+  /* ---------------------------------------------------------------------
+     控制动作
+     --------------------------------------------------------------------- */
+
+  function handleAction(action) {
+    if (action === 'toggle') {
+      if (player) {
+        player.toggle();
+      } else if (!loadPromise) {
+        // 首次点播放：懒加载，加载完直接开播（不强制展开面板）。
+        // 加载中再点不排队第二次 toggle：loadPlayer 复用同一个 promise，
+        // 否则偶数次点击会 net 成"播了又立刻停"。
+        loadPlayer()
+          .then(function (p) {
+            p.toggle();
+          })
+          .catch(function () {
+            /* 加载失败：面板里已有错误提示，这里静默 */
+          });
+      }
+    } else if (action === 'prev') {
+      if (player) player.skipBack();
+    } else if (action === 'next') {
+      if (player) player.skipForward();
+    } else if (action === 'expand') {
+      onClick();
+    }
   }
 
   /* ---------------------------------------------------------------------
@@ -173,8 +272,20 @@
   function setOpen(next) {
     open = next;
     document.body.classList.toggle('el-music-open', open);
-    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    positionNowPlaying();
+    if (expandBtn) expandBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function onClick() {
+    // 第一次点击（还没开始加载）：展开面板并加载
+    if (!player && !loadPromise) {
+      setOpen(true);
+      loadPlayer().catch(function () {
+        /* 失败提示在面板里 */
+      });
+      return;
+    }
+    // 已加载 / 加载中：收起 / 展开（加载中也能收起，不必等歌单回来）
+    setOpen(!open);
   }
 
   /* ---------------------------------------------------------------------
@@ -184,21 +295,21 @@
      拖动期间用 rAF 合并写入，避免每个 pointermove 都改一次样式。
 
      为什么用 left/top 而不是 transform：
-       面板的展开/收起动画本身就在用 transform
-       （收起态是 translateY(16px) scale(.97)），
-       拖动也走 transform 会和开合动画互相覆盖。
-       left/top 和它天然错开，各管各的。
+       卡片/面板的展开动画与 hover 都在用 transform，
+       拖动也走 transform 会和它们互相覆盖。left/top 天然错开，各管各的。
 
      落定时机：pointerup 才把位置写进 localStorage，
      拖动过程中只改样式，避免高频写存储。
      --------------------------------------------------------------------- */
 
-  function makeDraggable(handle, target, storeKey, excludeEl) {
+  function makeDraggable(handle, target, storeKey, ignoreSelector) {
     var dragging = false;
     var startX = 0;
     var startY = 0;
     var originLeft = 0;
     var originTop = 0;
+    var originWidth = 0;
+    var originHeight = 0;
     var pendingLeft = 0;
     var pendingTop = 0;
     var raf = null;
@@ -223,8 +334,8 @@
     }
 
     handle.addEventListener('pointerdown', function (e) {
-      // 手柄里如果有按钮（面板的关闭键），点它不算拖
-      if (excludeEl && e.target.closest && e.target.closest('.el-music-panel__close')) return;
+      // 手柄里的按钮（卡片的控制键 / 面板的关闭键）不触发拖
+      if (ignoreSelector && e.target.closest && e.target.closest(ignoreSelector)) return;
       // 只处理主键 / 触摸
       if (e.button !== undefined && e.button !== 0) return;
 
@@ -236,19 +347,10 @@
       startY = e.clientY;
       originLeft = rect.left;
       originTop = rect.top;
+      originWidth = rect.width;
+      originHeight = rect.height;
       pendingLeft = rect.left;
       pendingTop = rect.top;
-
-      // 落定成显式 left/top，并把 right/bottom 让开，
-      // 否则默认的 right/bottom 锚点会和 left/top 打架。
-      // 同时把宽度固定下来 —— 移动端面板原本是 left+right 双向定位
-      // （宽度由两边挤出来），一旦改成 left/top，不锁宽度就会缩成内容宽。
-      target.style.right = 'auto';
-      target.style.bottom = 'auto';
-      target.style.left = rect.left + 'px';
-      target.style.top = rect.top + 'px';
-      target.style.width = rect.width + 'px';
-      target.style.maxWidth = 'none';
 
       if (handle.setPointerCapture) {
         try {
@@ -265,20 +367,28 @@
       var dx = e.clientX - startX;
       var dy = e.clientY - startY;
 
-      // 超过阈值才真正进入"拖动"状态，
-      // 这样轻微抖动不会把点击吃掉。
+      // 超过阈值才真正进入"拖动"状态，这样轻微抖动不会把点击吃掉
       if (!target.dataset.dragging && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
         target.dataset.dragging = '1';
         handle.dataset.dragged = '1';
         document.body.classList.add('el-music-dragging');
-        // 拖动期间关掉过渡，否则面板会"追"着指针走
+        // 拖动期间关掉过渡，否则元素会"追"着指针走
         target.style.transition = 'none';
+
+        // 真正开拖的这一刻才把 right/bottom 锚点换成 left/top，并把宽度锁死。
+        // 放在这里而不是 pointerdown：这样"只点一下不拖"就不会顶掉 CSS 的
+        // right/bottom 定位，卡片/面板在没拖过的情况下仍能随断点自适应。
+        target.style.right = 'auto';
+        target.style.bottom = 'auto';
+        target.style.left = originLeft + 'px';
+        target.style.top = originTop + 'px';
+        target.style.width = originWidth + 'px';
+        target.style.maxWidth = 'none';
       }
 
       if (!target.dataset.dragging) return;
 
-      var rect = target.getBoundingClientRect();
-      var pos = clamp(originLeft + dx, originTop + dy, rect.width, rect.height);
+      var pos = clamp(originLeft + dx, originTop + dy, originWidth, originHeight);
       pendingLeft = pos.left;
       pendingTop = pos.top;
 
@@ -331,7 +441,6 @@
       el.style.left = left + 'px';
       el.style.top = top + 'px';
     });
-    positionNowPlaying();
   }
 
   function restorePositions() {
@@ -355,11 +464,14 @@
       }
       if (!pos || typeof pos.left !== 'number' || typeof pos.top !== 'number') return;
 
-      // 恢复时也要锁宽度，理由同 makeDraggable 里那段注释
-      var rect = item.el.getBoundingClientRect();
-      var w = rect.width || (item.el === toggle ? 50 : 360);
+      // 恢复时也要锁宽度，理由同 makeDraggable 里那段注释。
+      // 用 offsetWidth/offsetHeight（未受 transform 影响的布局尺寸）而不是
+      // getBoundingClientRect()：面板恢复时处于收起态（scale(0.97)），
+      // rect 会拿到 97% 的宽高，把宽度锁成 349px 这种错值。
+      var w = item.el.offsetWidth || 360;
+      var h = item.el.offsetHeight || 70;
       var left = Math.min(Math.max(pos.left, 6), Math.max(6, window.innerWidth - w - 6));
-      var top = Math.min(Math.max(pos.top, 6), Math.max(6, window.innerHeight - (rect.height || 60) - 6));
+      var top = Math.min(Math.max(pos.top, 6), Math.max(6, window.innerHeight - h - 6));
 
       item.el.style.right = 'auto';
       item.el.style.bottom = 'auto';
@@ -368,51 +480,65 @@
       item.el.style.width = w + 'px';
       item.el.style.maxWidth = 'none';
     });
-    positionNowPlaying();
   }
 
   /* ---------------------------------------------------------------------
-     收起状态的"当前歌词"
+     迷你卡片状态回显（把 APlayer 的实时状态映射到卡片上）
      --------------------------------------------------------------------- */
 
-  function positionNowPlaying() {
-    if (!nowPlaying || !toggle) return;
-
-    var show = !!player && !open && nowPlaying.textContent;
-    nowPlaying.classList.toggle('is-visible', !!show);
-    if (!show) return;
-
-    var r = toggle.getBoundingClientRect();
-    var w = nowPlaying.offsetWidth || 0;
-
-    // 圆钮在屏幕右半边就把歌词放左边，反之放右边，
-    // 免得歌词被拖出屏幕外。
-    if (r.left + r.width / 2 > window.innerWidth / 2) {
-      nowPlaying.style.left = 'auto';
-      nowPlaying.style.right = window.innerWidth - r.left + 10 + 'px';
-    } else {
-      nowPlaying.style.right = 'auto';
-      nowPlaying.style.left = r.left + r.width + 10 + 'px';
-    }
-    nowPlaying.style.top = r.top + (r.height - (nowPlaying.offsetHeight || 30)) / 2 + 'px';
-    void w;
+  // 换歌：同步歌名 / 歌手 / 封面
+  function syncTrack() {
+    if (!player || !player.list) return;
+    var a = player.list.audios[player.list.index];
+    if (!a) return;
+    titleText.textContent = a.name || '未知曲目';
+    artistEl.textContent = a.artist || '未知艺术家';
+    setCover(a.cover);
   }
 
-  function bindNowPlaying() {
-    var last = '';
-    player.on('timeupdate', function () {
-      var cur = playerBox.querySelector('.aplayer-lrc p.aplayer-lrc-current');
-      var text = cur ? cur.textContent.trim() : '';
-      if (text === last) return;
-      last = text;
-      nowPlaying.textContent = text;
-      positionNowPlaying();
-    });
+  function setCover(url) {
+    if (!url) {
+      disc.classList.remove('has-cover');
+      coverImg.removeAttribute('src');
+      return;
+    }
+    coverImg.onload = function () {
+      disc.classList.add('has-cover');
+    };
+    coverImg.onerror = function () {
+      disc.classList.remove('has-cover');
+      coverImg.removeAttribute('src');
+    };
+    coverImg.src = url;
+  }
 
-    player.on('destroy', function () {
-      nowPlaying.textContent = '';
-      positionNowPlaying();
+  function fmtTime(t) {
+    if (!isFinite(t) || t < 0) t = 0;
+    var m = Math.floor(t / 60);
+    var s = Math.floor(t % 60);
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function updateProgress() {
+    if (!player || !player.audio) return;
+    var cur = player.audio.currentTime || 0;
+    var dur = player.audio.duration || 0;
+    barFill.style.width = (dur > 0 ? (cur / dur) * 100 : 0).toFixed(2) + '%';
+    timeEl.textContent = fmtTime(cur) + ' / ' + (dur > 0 ? fmtTime(dur) : '--:--');
+  }
+
+  function bindPlayerEvents() {
+    player.on('play', function () {
+      toggle.classList.add('is-playing');
     });
+    player.on('pause', function () {
+      toggle.classList.remove('is-playing');
+    });
+    player.on('ended', function () {
+      toggle.classList.remove('is-playing');
+    });
+    player.on('listswitch', syncTrack);
+    player.on('timeupdate', updateProgress);
   }
 
   /* ---------------------------------------------------------------------
@@ -464,8 +590,8 @@
             artist: item.author || item.artist || '未知艺术家',
             url: item.url,
             cover: item.pic || item.cover,
-            // lrc 必须是 .lrc 的 URL（lrcType: 3）。
-            // 接口没给就留空，APlayer 会保持歌词区空白而不是报错。
+            // lrc 必须是 .lrc 的 URL（lrcType: 3）。接口没给就留空，
+            // APlayer 会保持歌词区空白而不是报错。
             lrc: item.lrc || '',
             type: 'auto'
           };
@@ -483,16 +609,21 @@
     hintBox.style.display = '';
   }
 
-  function init() {
-    if (player || loading) return;
-    loading = true;
+  function clearLoading() {
+    toggle.classList.remove('is-loading');
+  }
+
+  /* 懒加载 APlayer + 歌单，返回 Promise。重复调用复用同一次加载，
+     失败时把 loadPromise 置空，允许下一次点击重试。 */
+  function loadPlayer() {
+    if (player) return Promise.resolve(player);
+    if (loadPromise) return loadPromise;
 
     showHint('正在加载歌单…');
     toggle.classList.add('is-loading');
-
     loadCss('/js/lib/aplayer.min.css');
 
-    loadScript('/js/lib/aplayer.min.js')
+    loadPromise = loadScript('/js/lib/aplayer.min.js')
       .then(fetchPlaylist)
       .then(function (audio) {
         hintBox.style.display = 'none';
@@ -514,39 +645,21 @@
           autoplay: false
         });
 
-        player.on('play', function () {
-          toggle.classList.add('is-playing');
-        });
-        player.on('pause', function () {
-          toggle.classList.remove('is-playing');
-        });
-        player.on('ended', function () {
-          toggle.classList.remove('is-playing');
-        });
-
-        bindNowPlaying();
-        positionNowPlaying();
+        bindPlayerEvents();
+        syncTrack();
+        toggle.classList.add('is-ready');
+        return player;
       })
       .catch(function (err) {
         console.warn('[Music]', err);
         showHint('歌单加载失败，可能是公共 API 限流。稍后重试，或改用自己的 Meting API。', true);
-      })
-      .then(function () {
-        loading = false;
-        toggle.classList.remove('is-loading');
+        loadPromise = null; // 允许下次重试
+        throw err;
       });
-  }
 
-  function onClick() {
-    // 第一次点击：展开面板并加载
-    if (!player) {
-      setOpen(true);
-      init();
-      return;
-    }
-
-    // 已加载：收起 / 展开
-    setOpen(!open);
+    // 成功失败都撤掉 loading 态
+    loadPromise.then(clearLoading, clearLoading);
+    return loadPromise;
   }
 
   /* ---------------------------------------------------------------------

@@ -225,7 +225,7 @@
 #pagination .page-number:active,
 #pagination .extend:active,
 #rightside > div > button:active,
-.el-music-toggle:active {
+.el-music-mini__btn:active {
   transform: scale(0.965);
   transition-duration: 0.09s;
 }
