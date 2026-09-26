@@ -1,0 +1,299 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>友链 | EndlessLiu</title><meta name="author" content="EndlessLiu"><meta name="copyright" content="EndlessLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f6f2f8"><meta name="description" content="FRIENDS天涯若比邻示例博客这里是一句博客简介，介绍这个站点在写什么。前端生活示例博客二记录与分享技术路上的点点滴滴。技术随笔示例博客三一个安静的角落。随笔RECENT友邻动态这是一篇示例文章的标题示例博客Sun Sep 20 2026 08:00:00 GMT+0800 (中国标准时间)又一篇示例文章的标题示例博客二Fri Sep 18 2026 08:00:00 GMT+0800 (中国标">
+<meta property="og:type" content="website">
+<meta property="og:title" content="友链">
+<meta property="og:url" content="https://endlessliu.github.io/friends/index.html">
+<meta property="og:site_name" content="EndlessLiu">
+<meta property="og:description" content="FRIENDS天涯若比邻示例博客这里是一句博客简介，介绍这个站点在写什么。前端生活示例博客二记录与分享技术路上的点点滴滴。技术随笔示例博客三一个安静的角落。随笔RECENT友邻动态这是一篇示例文章的标题示例博客Sun Sep 20 2026 08:00:00 GMT+0800 (中国标准时间)又一篇示例文章的标题示例博客二Fri Sep 18 2026 08:00:00 GMT+0800 (中国标">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://endlessliu.github.io/img/avatar.webp">
+<meta property="article:published_time" content="2026-09-26T12:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-26T12:25:29.651Z">
+<meta property="article:author" content="EndlessLiu">
+<meta property="article:tag" content="Computer Science">
+<meta property="article:tag" content="GitHub">
+<meta property="article:tag" content="Hexo">
+<meta property="article:tag" content="java">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://endlessliu.github.io/img/avatar.webp"><script type="application/ld+json"></script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://endlessliu.github.io/friends/index.html"><link rel="preconnect"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.0"><link rel="stylesheet" href="/pluginsSrc/@fortawesome/fontawesome-free/css/all.min.css?v=7.3.1"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        const data = { value }
+
+        if (ttl != null) {
+          data.expiry = Date.now() + ttl * 86400000
+        }
+
+        localStorage.setItem(key, JSON.stringify(data))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#1e1221')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#f6f2f8')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: '/pluginsSrc/@egjs/infinitegrid/dist/infinitegrid.min.js?v=4.13.0',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '友链',
+  isHighlightShrink: false,
+  isToc: false,
+  pageType: 'page'
+}</script><link rel="stylesheet" href="/css/custom.css"><link rel="stylesheet" href="/css/music.css"><link rel="stylesheet" href="/css/vision.css"><link rel="stylesheet" href="/css/appearance.css"><link rel="stylesheet" href="/css/photo-wall.css"><link rel="stylesheet" href="/css/about.css"><link rel="stylesheet" href="/css/pet.css"><link rel="stylesheet" href="/css/dashboard.css"><link rel="stylesheet" href="/css/background.css"><link rel="stylesheet" href="/css/page-transition.css"><link rel="stylesheet" href="/css/friends.css"><script>
+(function () {
+  try {
+    var r = document.documentElement, ls = window.localStorage;
+
+    var h = parseInt(ls.getItem('el-accent-hue'), 10);
+    if (!isNaN(h) && h >= 0 && h <= 360) r.style.setProperty('--accent-hue', String(h));
+
+    // 无显式亮暗选择（首次访问 / 选了"跟随系统"）就跟随系统；
+    // theme 键由 Butterfly 的 saveToLocal 存成 JSON，未选择时 getItem 为 null。
+    if (ls.getItem('theme') === null) {
+      var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+      if (mq) r.dataset.theme = mq.matches ? 'dark' : 'light';
+    }
+  } catch (e) { /* 隐私模式 / 沙箱里 localStorage 会抛，静默退回默认外观 */ }
+})();
+</script>
+<meta name="generator" content="Hexo 8.1.2"><script>window.EL_BG_POOL=["/img/photos/199.jpg","/img/photos/200.jpg","/img/photos/201.jpg","/img/photos/202.jpg","/img/photos/203.jpg","/img/photos/204.jpg","/img/photos/205.jpg","/img/photos/206.jpg","/img/photos/207.jpg","/img/photos/208.jpg","/img/photos/209.jpg"];</script></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (true) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/img/hyxhn.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.webp" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/ loading='lazy'></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">1</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/photos/"><i class="fa-fw fas fa-images"></i><span> 照片墙</span></a></div><div class="menus_item"><a class="site-page" href="/friends/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/guestbook/"><i class="fa-fw fas fa-comment-dots"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于</span></a></div></div></div></div><div class="page" id="body-wrap"><header class="not-home-page fixed" id="page-header" style="background-image: url(/img/hyxhn.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">EndlessLiu</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/photos/"><i class="fa-fw fas fa-images"></i><span> 照片墙</span></a></div><div class="menus_item"><a class="site-page" href="/friends/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/guestbook/"><i class="fa-fw fas fa-comment-dots"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="page-site-info"><h1 id="site-title">友链</h1></div></header><main class="layout hide-aside" id="content-inner"><div id="page"><div class="container" id="article-container"><div class="el-friends" id="el-friends"><header class="el-friends__hero"><span class="el-friends__en">FRIENDS</span><h1 class="el-friends__title">天涯若比邻</h1></header><div class="el-friends__grid"><a class="el-friend-card el-friend-card--featured" href="https://example.com" target="_blank" rel="noopener"><span class="el-friend-card__avatar"><img src="/img/avatar.webp" alt="示例博客" loading="lazy"></span><span class="el-friend-card__body"><span class="el-friend-card__name">示例博客</span><span class="el-friend-card__desc">这里是一句博客简介，介绍这个站点在写什么。</span><span class="el-friend-card__tags"><span class="el-friend-card__tag">前端</span><span class="el-friend-card__tag">生活</span></span></span></a><a class="el-friend-card" href="https://example.com" target="_blank" rel="noopener"><span class="el-friend-card__avatar"><img src="/img/avatar.webp" alt="示例博客二" loading="lazy"></span><span class="el-friend-card__body"><span class="el-friend-card__name">示例博客二</span><span class="el-friend-card__desc">记录与分享技术路上的点点滴滴。</span><span class="el-friend-card__tags"><span class="el-friend-card__tag">技术</span><span class="el-friend-card__tag">随笔</span></span></span></a><a class="el-friend-card" href="https://example.com" target="_blank" rel="noopener"><span class="el-friend-card__avatar"><img src="/img/avatar.webp" alt="示例博客三" loading="lazy"></span><span class="el-friend-card__body"><span class="el-friend-card__name">示例博客三</span><span class="el-friend-card__desc">一个安静的角落。</span><span class="el-friend-card__tags"><span class="el-friend-card__tag">随笔</span></span></span></a></div><section class="el-friends-posts"><div class="el-friends__section-head"><span class="el-friends__section-en">RECENT</span><h2 class="el-friends__section-title">友邻动态</h2></div><div class="el-friends-posts__grid"><a class="el-friends-post" href="https://example.com/post" target="_blank" rel="noopener"><span class="el-friends-post__title">这是一篇示例文章的标题</span><span class="el-friends-post__meta"><span>示例博客</span><span>Sun Sep 20 2026 08:00:00 GMT+0800 (中国标准时间)</span></span></a><a class="el-friends-post" href="https://example.com/post-2" target="_blank" rel="noopener"><span class="el-friends-post__title">又一篇示例文章的标题</span><span class="el-friends-post__meta"><span>示例博客二</span><span>Fri Sep 18 2026 08:00:00 GMT+0800 (中国标准时间)</span></span></a><a class="el-friends-post" href="https://example.com/post-3" target="_blank" rel="noopener"><span class="el-friends-post__title">第三篇示例文章的标题</span><span class="el-friends-post__meta"><span>示例博客三</span><span>Tue Sep 15 2026 08:00:00 GMT+0800 (中国标准时间)</span></span></a></div></section><section class="el-friends-add"><div class="el-friends__section-head"><span class="el-friends__section-en">JOIN</span><h2 class="el-friends__section-title">添加友链</h2></div><div class="el-friends-add__tabs"><button class="el-friends-tab is-active" type="button" data-tab="mine">我的信息</button><button class="el-friends-tab" type="button" data-tab="apply">申请友链</button></div><div class="el-friends-panel is-active" data-panel="mine"><div class="el-friends-info__row"><span class="el-friends-info__label">站点名称</span><span class="el-friends-info__value">EndlessLiu</span><button class="el-friends-copy" type="button" data-copy="EndlessLiu" aria-label="复制站点名称">复制</button></div><div class="el-friends-info__row"><span class="el-friends-info__label">网站地址</span><span class="el-friends-info__value">https://endlessliu.github.io</span><button class="el-friends-copy" type="button" data-copy="https://endlessliu.github.io" aria-label="复制网站地址">复制</button></div><div class="el-friends-info__row"><span class="el-friends-info__label">头像地址</span><span class="el-friends-info__value">/img/avatar.webp</span><button class="el-friends-copy" type="button" data-copy="/img/avatar.webp" aria-label="复制头像地址">复制</button></div><div class="el-friends-info__row"><span class="el-friends-info__label">站点描述</span><span class="el-friends-info__value">记录学习、生活与折腾的痕迹</span><button class="el-friends-copy" type="button" data-copy="记录学习、生活与折腾的痕迹" aria-label="复制站点描述">复制</button></div><div class="el-friends-info__row"><span class="el-friends-info__label">RSS</span><span class="el-friends-info__value">https://endlessliu.github.io/atom.xml</span><button class="el-friends-copy" type="button" data-copy="https://endlessliu.github.io/atom.xml" aria-label="复制RSS">复制</button></div></div><div class="el-friends-panel" data-panel="apply"><form class="el-friends-form" data-mail="czliu051003@gmail.com"><input class="el-friends-form__input" name="name" type="text" placeholder="昵称 *" required><input class="el-friends-form__input" name="url" type="text" placeholder="网站地址 *" required><input class="el-friends-form__input" name="avatar" type="text" placeholder="头像地址"><input class="el-friends-form__input" name="desc" type="text" placeholder="一句话介绍"><input class="el-friends-form__input" name="email" type="email" placeholder="联系邮箱"><input class="el-friends-form__input" name="tags" type="text" placeholder="标签（用逗号分隔）"><input class="el-friends-form__input" name="rss" type="text" placeholder="RSS 地址"><button class="el-friends-form__submit" type="submit">提交申请</button></form></div></section></div>
+</div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By EndlessLiu</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.2</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.0"></script><script src="/js/main.js?v=5.7.0"></script><div class="js-pjax"></div><script src="/js/site-fx.js"></script><script src="/js/music.js"></script><script src="/js/vision.js"></script><script src="/js/appearance.js"></script><script src="/js/photo-wall.js"></script><script src="/js/pet.js"></script><script src="/js/dashboard.js"></script><script src="/js/about.js"></script><script src="/js/background.js"></script><script src="/js/page-transition.js"></script><script src="/js/friends.js"></script><script src="/pluginsSrc/pjax/pjax.min.js?v=0.2.8" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:description\"]","link[rel=\"canonical\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      false
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

@@ -1,0 +1,454 @@
+/* ==========================================================================
+   EndlessLoop · 友链页样式
+   --------------------------------------------------------------------------
+   结构由 scripts/friends.js 的 {% friends %} 输出，交互由 source/js/friends.js。
+   视觉沿用整站的毛玻璃 + 乳白淡粉淡紫 + 柔和圆角 + 低饱和雾紫粉。
+   ========================================================================== */
+
+.el-friends {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* -------------------------------------------------------------------------
+   标题区
+   ------------------------------------------------------------------------- */
+.el-friends__hero {
+  text-align: center;
+  margin: 8px 0 30px;
+}
+
+.el-friends__en {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--el-accent-ink);
+  opacity: 0.82;
+}
+
+.el-friends__title {
+  margin: 10px 0 0;
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', 'MS Mincho', serif;
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--el-text);
+  text-shadow: 0 2px 16px hsla(var(--accent-hue), 40%, 82%, 0.25);
+}
+
+/* -------------------------------------------------------------------------
+   小节标题（友邻动态 / 添加友链 通用）
+   ------------------------------------------------------------------------- */
+.el-friends__section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 34px 0 18px;
+}
+
+.el-friends__section-en {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--el-accent-ink);
+  opacity: 0.7;
+}
+
+.el-friends__section-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--el-text);
+}
+
+/* -------------------------------------------------------------------------
+   友链卡片网格
+   ------------------------------------------------------------------------- */
+.el-friends__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 18px;
+}
+
+.el-friend-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-lg);
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: var(--el-shadow-2), inset 0 1px 0 var(--el-liquid-inset);
+  overflow: hidden;
+  text-decoration: none;
+  transition: transform 0.35s var(--el-ease), box-shadow 0.35s var(--el-ease),
+    border-color 0.35s var(--el-ease);
+}
+
+/* 镜面高光 */
+.el-friend-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--el-liquid-sheen);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.el-friend-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 横向大卡片：占两列，头像与间距更舒展 */
+.el-friend-card--featured {
+  grid-column: span 2;
+  padding: 26px;
+  gap: 22px;
+}
+
+/* 头像：conic 渐变环（与关于页头像同款四色） */
+.el-friend-card__avatar {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  padding: 3px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: conic-gradient(
+    from 0deg,
+    hsl(var(--accent-hue), 100%, 81%),
+    hsl(calc(var(--accent-hue) - 37), 92%, 76%),
+    hsl(calc(var(--accent-hue) - 74), 100%, 72%),
+    hsl(calc(var(--accent-hue) - 110), 77%, 64%),
+    hsl(var(--accent-hue), 100%, 81%)
+  );
+}
+
+.el-friend-card--featured .el-friend-card__avatar {
+  width: 76px;
+  height: 76px;
+}
+
+.el-friend-card__avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--el-glass-bg-strong);
+  transition: transform 0.5s var(--el-ease);
+}
+
+.el-friend-card__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.el-friend-card__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--el-text);
+}
+
+.el-friend-card__desc {
+  font-size: 0.86rem;
+  color: var(--el-text-mute);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.el-friend-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.el-friend-card__tag {
+  padding: 3px 10px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: 999px;
+  background: hsla(var(--accent-hue), 100%, 81%, 0.1);
+  color: var(--el-accent-ink);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* hover：轻微上浮 + 头像放大 + 柔和粉紫光晕 */
+.el-friend-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(216, 168, 192, 0.55);
+  box-shadow: var(--el-shadow-3), 0 0 24px rgba(197, 150, 173, 0.22);
+}
+
+.el-friend-card:hover .el-friend-card__avatar img {
+  transform: scale(1.08);
+}
+
+/* -------------------------------------------------------------------------
+   友邻动态
+   ------------------------------------------------------------------------- */
+.el-friends-posts__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.el-friends-post {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--el-shadow-1);
+  text-decoration: none;
+  transition: transform 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease),
+    border-color 0.3s var(--el-ease);
+}
+
+.el-friends-post:hover {
+  transform: translateY(-3px);
+  border-color: rgba(216, 168, 192, 0.5);
+  box-shadow: var(--el-shadow-2);
+}
+
+.el-friends-post__title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--el-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.el-friends-post__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--el-text-mute);
+}
+
+.el-friends-post__meta span + span::before {
+  content: '·';
+  margin-right: 10px;
+}
+
+/* -------------------------------------------------------------------------
+   添加友链（Tab + 面板）
+   ------------------------------------------------------------------------- */
+.el-friends-add__tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.el-friends-tab {
+  padding: 8px 20px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: 999px;
+  background: var(--el-glass-bg-soft);
+  color: var(--el-text-soft);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.3s var(--el-ease), color 0.3s var(--el-ease),
+    border-color 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease);
+}
+
+.el-friends-tab:hover {
+  color: var(--el-accent-ink);
+  border-color: hsla(var(--accent-hue), 100%, 81%, 0.45);
+}
+
+.el-friends-tab.is-active {
+  background: var(--el-grad-main);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 16px hsla(var(--accent-hue), 40%, 82%, 0.32);
+}
+
+.el-friends-tab:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+.el-friends-panel {
+  display: none;
+}
+
+.el-friends-panel.is-active {
+  display: block;
+}
+
+/* ---- 我的信息 ---- */
+.el-friends-info__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  margin-bottom: 10px;
+}
+
+.el-friends-info__label {
+  flex: 0 0 auto;
+  width: 76px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-soft);
+}
+
+.el-friends-info__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--el-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.el-friends-copy {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: 999px;
+  background: var(--el-glass-bg-soft);
+  color: var(--el-accent-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.25s var(--el-ease), color 0.25s var(--el-ease),
+    transform 0.25s var(--el-ease-back);
+}
+
+.el-friends-copy:hover {
+  background: var(--el-grad-main);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.el-friends-copy.is-done {
+  background: var(--el-grad-main);
+  color: #fff;
+}
+
+/* ---- 申请友链表单 ---- */
+.el-friends-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.el-friends-form__input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--el-text);
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.25s var(--el-ease), box-shadow 0.25s var(--el-ease);
+}
+
+.el-friends-form__input::placeholder {
+  color: var(--el-text-mute);
+}
+
+.el-friends-form__input:focus {
+  outline: none;
+  border-color: hsla(var(--accent-hue), 100%, 81%, 0.55);
+  box-shadow: 0 0 0 3px hsla(var(--accent-hue), 100%, 81%, 0.14);
+}
+
+.el-friends-form__submit {
+  grid-column: 1 / -1;
+  padding: 13px 24px;
+  border: none;
+  border-radius: 999px;
+  background: var(--el-grad-main);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 8px 20px hsla(var(--accent-hue), 40%, 82%, 0.3);
+  transition: transform 0.3s var(--el-ease-back), box-shadow 0.3s var(--el-ease),
+    filter 0.3s var(--el-ease);
+}
+
+.el-friends-form__submit:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 12px 26px hsla(var(--accent-hue), 40%, 82%, 0.4);
+}
+
+/* -------------------------------------------------------------------------
+   响应式
+   ------------------------------------------------------------------------- */
+@media screen and (max-width: 768px) {
+  .el-friends__grid,
+  .el-friends-posts__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .el-friend-card--featured {
+    grid-column: span 1;
+  }
+
+  .el-friends-form {
+    grid-template-columns: 1fr;
+  }
+
+  .el-friends-info__row {
+    flex-wrap: wrap;
+  }
+
+  .el-friends-info__label {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-friend-card,
+  .el-friend-card__avatar img,
+  .el-friends-post,
+  .el-friends-tab,
+  .el-friends-copy,
+  .el-friends-form__submit {
+    transition: none;
+  }
+}
