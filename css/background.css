@@ -1,0 +1,95 @@
+/* ==========================================================================
+   EndlessLoop · 非首页动态二次元背景
+   --------------------------------------------------------------------------
+   结构由 source/js/background.js 注入：
+     - 两个 .el-bg 背景层（交叉淡入淡出）
+     - 一个 .el-bg-overlay 深色渐变 + 淡网格遮罩
+     - 一个 .el-bg-btn「↻ 换背景」HUD 按钮
+
+   层级：.el-bg(-998/-997) 夹在 #web_bg(-999) 与正文之间，
+   遮罩 -996，按钮 z-index 94（在正文之上，可点击，避开灯箱/音乐卡）。
+   ========================================================================== */
+
+.el-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -998;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.6s var(--el-ease);
+  pointer-events: none;
+}
+
+/* 深色渐变 + 极淡网格遮罩：保证正文可读，延续赛博/HUD 质感 */
+.el-bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -996;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(10, 12, 26, 0.42) 0%, rgba(10, 12, 26, 0.3) 45%, rgba(10, 12, 26, 0.52) 100%);
+  background-size: 46px 46px, 46px 46px, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat;
+}
+
+/* 「↻ 换背景」小 HUD 按钮 */
+.el-bg-btn {
+  position: fixed;
+  top: 84px;
+  right: 22px;
+  z-index: 94;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(18, 20, 38, 0.5);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32),
+    0 0 0 1px hsla(var(--accent-hue), 100%, 81%, 0.14);
+  transition: background 0.3s var(--el-ease), transform 0.3s var(--el-ease-back),
+    box-shadow 0.3s var(--el-ease);
+}
+
+.el-bg-btn:hover {
+  background: rgba(28, 30, 52, 0.62);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4),
+    0 0 16px hsla(var(--accent-hue), 100%, 81%, 0.3);
+}
+
+.el-bg-btn:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 100%, 81%);
+  outline-offset: 2px;
+}
+
+/* 移动端：按钮上移避开窄屏导航，略缩小 */
+@media screen and (max-width: 768px) {
+  .el-bg-btn {
+    top: 70px;
+    right: 12px;
+    padding: 8px 12px;
+    font-size: 11.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-bg,
+  .el-bg-btn {
+    transition: none;
+  }
+}
