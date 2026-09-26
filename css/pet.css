@@ -1,7 +1,7 @@
 /* ==========================================================================
    EndlessLoop · 互动宠物窝 / 点击特效样式
    --------------------------------------------------------------------------
-   1. 宠物窝：左下角玻璃小窝 + 多只宠物（缩放/镜像/换色）错落堆叠
+   1. 宠物窝：左下角玻璃小窝 + 3 只真实宠物（img/pet/pets.png 精灵图裁剪）
    2. 说话气泡
    3. 点击特效：Hello Kitty 风格贴纸 + 核心价值观文字
    ========================================================================== */
@@ -10,25 +10,12 @@
    1. 宠物窝
    ------------------------------------------------------------------------- */
 
-#el-pet-corner {
+/* 淡玻璃底座（左右各一块，云朵 / 小地毯感） */
+.el-pet-rug {
   position: fixed;
-  left: 10px;
-  bottom: 10px;
-  z-index: 9994;
-  width: 150px;
-  height: 130px;
-  pointer-events: none; /* 容器不挡点击，宠物按钮自己可点 */
-}
-
-/* 淡玻璃底座（小地毯 / 云朵感），不喧宾夺主 */
-.el-pet-corner__rug {
-  position: absolute;
-  left: -8px;
-  right: -8px;
-  bottom: -2px;
-  height: 60px;
+  z-index: 9992;
   border: 1px solid var(--el-glass-border);
-  border-radius: 26px;
+  border-radius: 28px;
   background: var(--el-glass-bg-soft);
   backdrop-filter: blur(10px) saturate(160%);
   -webkit-backdrop-filter: blur(10px) saturate(160%);
@@ -36,10 +23,22 @@
   pointer-events: none;
 }
 
+.el-pet-rug--left {
+  left: -8px;
+  bottom: 18px;
+  width: 205px;
+  height: 60px;
+}
+
+.el-pet-rug--right {
+  right: -8px;
+  bottom: 96px;
+  width: 220px;
+  height: 58px;
+}
+
 .el-pet {
-  position: absolute;
-  left: 0;
-  bottom: 0;
+  position: fixed;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -48,33 +47,60 @@
   pointer-events: none;
 }
 
-.el-pet-cat {
+.el-pet-body {
   display: block;
-  width: 80px;
-  height: 80px;
   padding: 0;
   border: none;
   background-color: transparent;
-  background-image: url('/img/oneko.gif');
   background-repeat: no-repeat;
-  image-rendering: pixelated;
   cursor: pointer;
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
-  /* 呼吸：轻微上下浮动 */
-  animation: el-pet-breathe 3.6s ease-in-out infinite;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.2));
+  transform-origin: bottom center;
+  animation: el-pet-breathe 3.8s ease-in-out infinite;
 }
 
-.el-pet-cat:focus-visible {
+.el-pet-body:focus-visible {
   outline: 2px solid var(--el-sakura);
   outline-offset: 2px;
-  border-radius: 12px;
+  border-radius: 14px;
 }
 
-/* 跳一下（临时替代呼吸动画） */
-.el-pet-cat.is-jumping {
-  animation: el-pet-jump 0.7s var(--el-ease);
+/* 悬停：轻微抬头 + 变亮 */
+.el-pet-body:hover {
+  animation: el-pet-hover 0.5s var(--el-ease) forwards;
+  filter: brightness(1.07) saturate(1.04) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.24));
+}
+
+/* 点击：弹跳反应 */
+.el-pet-body.is-pop {
+  animation: el-pet-pop 0.55s var(--el-ease-back);
+}
+
+/* 随机跳一下 */
+.el-pet-body.is-jumping {
+  animation: el-pet-jump 0.75s var(--el-ease);
+}
+
+/* 随机左右轻晃 */
+.el-pet-body.is-sway {
+  animation: el-pet-sway 0.9s var(--el-ease);
+}
+
+/* 随机伸懒腰 */
+.el-pet-body.is-stretch {
+  animation: el-pet-stretch 1.1s var(--el-ease);
+}
+
+/* 随机点头 */
+.el-pet-body.is-nod {
+  animation: el-pet-nod 0.9s var(--el-ease);
+}
+
+/* 随机扭动 */
+.el-pet-body.is-wiggle {
+  animation: el-pet-wiggle 0.7s var(--el-ease);
 }
 
 @keyframes el-pet-breathe {
@@ -83,7 +109,28 @@
     transform: translateY(0) scaleY(1);
   }
   50% {
-    transform: translateY(-2.5px) scaleY(1.02);
+    transform: translateY(-4px) scaleY(1.035);
+  }
+}
+
+@keyframes el-pet-hover {
+  to {
+    transform: translateY(-5px) rotate(-2deg);
+  }
+}
+
+@keyframes el-pet-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.08, 0.94);
+  }
+  65% {
+    transform: scale(0.97, 1.03);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
@@ -93,13 +140,71 @@
     transform: translateY(0);
   }
   30% {
-    transform: translateY(-18px) scale(1.04);
+    transform: translateY(-20px) scale(1.03);
   }
   60% {
     transform: translateY(0);
   }
   80% {
     transform: translateY(-6px);
+  }
+}
+
+@keyframes el-pet-sway {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-3deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes el-pet-stretch {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08, 0.95);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+
+@keyframes el-pet-nod {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  30% {
+    transform: translateY(3px) scaleY(0.94);
+  }
+  60% {
+    transform: translateY(-2px) scaleY(1.04);
+  }
+}
+
+@keyframes el-pet-wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-6deg);
+  }
+  40% {
+    transform: rotate(6deg);
+  }
+  60% {
+    transform: rotate(-4deg);
+  }
+  80% {
+    transform: rotate(4deg);
   }
 }
 
@@ -135,7 +240,6 @@
   transform: translateX(-50%) translateY(0) scale(1);
 }
 
-/* 气泡小尾巴 */
 .el-pet-bubble::after {
   content: '';
   position: absolute;
@@ -224,19 +328,22 @@
    响应式 / 降级
    ------------------------------------------------------------------------- */
 
-/* 移动端：整体缩小、更靠边，避免遮挡 */
 @media screen and (max-width: 768px) {
-  #el-pet-corner {
-    left: 6px;
-    bottom: 6px;
-    transform: scale(0.82);
-    transform-origin: bottom left;
+  .el-pet-rug--left,
+  .el-pet-rug--right {
+    opacity: 0.6;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .el-pet-cat,
-  .el-pet-cat.is-jumping,
+  .el-pet-body,
+  .el-pet-body:hover,
+  .el-pet-body.is-pop,
+  .el-pet-body.is-jumping,
+  .el-pet-body.is-sway,
+  .el-pet-body.is-stretch,
+  .el-pet-body.is-nod,
+  .el-pet-body.is-wiggle,
   .el-click-sticker,
   .el-click-text {
     animation: none;

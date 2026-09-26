@@ -1,16 +1,15 @@
 /* ==========================================================================
-   EndlessLoop · 互动宠物窝 + 贴纸点击特效
+   EndlessLoop · 互动宠物群 + 贴纸点击特效
    --------------------------------------------------------------------------
-   宠物窝：用唯一一张 oneko 猫精灵图，通过「缩放 / 镜像 / 换色」变出 5 只
-   形态各异的宠物，错落堆在左下角「玻璃小窝」里：
-     - 眼神跟随鼠标（整只宠物朝鼠标轻微偏移，距离越近越明显）；
-     - 生命动画：呼吸（CSS）、随机眨眼/挠痒/打盹（精灵帧）、偶尔跳一下；
-     - 点击某只 → 不同反应 + 随机气泡文字；悬停 → 轻微警觉反应；
-     - 随机互相转头/小动作，像一群住在博客里的小家伙。
+   宠物群：用 img/pet/pets.png（2×3 共 6 只宠物透明图）做精灵图，裁剪出 6 只，
+   分散分布在页面左右两侧（左侧 3 只、右侧 3 只），各带一块淡玻璃底座：
+     - 眼神跟随鼠标（整只宠物朝鼠标偏移 + 转头，幅度明显）；
+     - 生命动画：呼吸、跳跃、伸懒腰、点头、扭动、轻晃，随机冒气泡主动跟访客说话；
+     - 点击某只 → 弹跳反应 + 气泡；悬停 → 抬头变亮。
 
    点击特效（贴纸）：点击页面任意处弹出 Hello Kitty 风格贴纸 + 核心价值观文字。
 
-   性能：一个 rAF 循环驱动所有宠物的帧与眼神；reduced-motion / 省流 / 移动端降级。
+   性能：一个 rAF 循环驱动眼神跟随；reduced-motion / 省流 / 移动端降级。
    ========================================================================== */
 
 (function () {
@@ -24,55 +23,38 @@
     CAPS.saveData !== true &&
     !reduceMotion;
 
-  /* ---------------------------------------------------------------------
-     宠物窝
-     --------------------------------------------------------------------- */
+  var SHEET_W = 1536;
+  var SHEET_H = 1024;
 
-  var FRAME = 32;
-  var SCALE = 2.5;              // 精灵基础放大（32px → 80px）
-  var DISPLAY = FRAME * SCALE;  // 80
-  var SHEET_W = 256 * SCALE;    // 640
-  var SHEET_H = 128 * SCALE;    // 320
-
-  var SPRITE = {
-    idle: [[-3, -3]],
-    alert: [[-7, -3]],
-    scratchSelf: [[-5, 0], [-6, 0], [-7, 0]],
-    tired: [[-3, -2]],
-    sleeping: [[-2, 0], [-2, -1]]
-  };
-
-  /* 宠物配置：size=缩放 / flip=镜像 / hue=换色 / x,y=窝内坐标 / z=前后层 / phrases=性格台词 */
+  /* 6 只：side=left/right 分布，offset=距边缘，bottom=距底部（px/vh），dh=显示高度
+     左右各 3 只，分别放在「下 / 中 / 上」三个高度，不聚集 */
   var PET_CONFIGS = [
-    { size: 1.1,  flip: 1,  hue: 0,   x: 52,  y: -78,  z: 3, phrases: ['喵~ 你好呀', '今天也要加油鸭！', '在写代码还是摸鱼？', '考研加油！', '点我一下试试~'] },
-    { size: 0.85, flip: -1, hue: 90,  x: 10,  y: -60,  z: 2, phrases: ['嘿嘿，被你发现啦', '摸鱼快乐~', '记得多喝水哦', '今天阳光真好~'] },
-    { size: 0.92, flip: 1,  hue: 190, x: 96,  y: -56,  z: 1, phrases: ['呼…有点困了', 'zzZ…', '别吵我睡觉~', '梦里也在写代码…'] },
-    { size: 0.72, flip: -1, hue: 280, x: 32,  y: -104, z: 4, phrases: ['你在看我吗？', '眼睛会跟着你哦~', '我最活泼啦！', '来呀来呀~'] },
-    { size: 0.78, flip: 1,  hue: 330, x: 82,  y: -98,  z: 2, phrases: ['夜深了，早点休息~', '跑完步记得拉伸哦', '今天读了几页书呀？', '慢慢来，比较快~'] }
+    // 左侧：下 / 中 / 上
+    { sx: 11,   sy: 516, sw: 467, sh: 500, dh: 100, side: 'left',  offset: 8,  bottom: '20px', z: 6, phrases: ['你好呀～', '欢迎来玩~', '今天也要加油哦！', '在写代码还是摸鱼？'] },
+    { sx: 615,  sy: 0,   sw: 309, sh: 509, dh: 82,  side: 'left',  offset: 12, bottom: '38vh', z: 5, phrases: ['今天读了几页书呀？', '慢慢来，比较快~', '再坚持一下下~', '加油鸭！'] },
+    { sx: 1074, sy: 34,  sw: 352, sh: 482, dh: 74,  side: 'left',  offset: 8,  bottom: '66vh', z: 3, phrases: ['夜深了早点休息~', '跑完步记得拉伸哦', '考研加油！', '明天会更好~'] },
+    // 右侧：下 / 中 / 上
+    { sx: 1110, sy: 516, sw: 279, sh: 507, dh: 84,  side: 'right', offset: 84, bottom: '110px', z: 4, phrases: ['我最小但我最活泼！', '点我呀~', '一起来玩~', '嘿嘿嘿~'] },
+    { sx: 588,  sy: 517, sw: 408, sh: 501, dh: 88,  side: 'right', offset: 12, bottom: '40vh', z: 2, phrases: ['你在看我吗？', '嘿嘿，被发现啦', '摸鱼快乐~', '记得多喝水哦'] },
+    { sx: 87,   sy: 13,  sw: 390, sh: 499, dh: 76,  side: 'right', offset: 8,  bottom: '66vh', z: 1, phrases: ['呼…有点困了', 'zzZ…', '别吵我睡觉~', '梦里也在写代码…'] }
   ];
 
-  var count = isMobile ? 3 : 5;
-
   function initPetCorner() {
-    if (!enabled || document.getElementById('el-pet-corner')) return;
+    if (!enabled || document.getElementById('el-pet-rug--left')) return;
 
-    var corner = document.createElement('div');
-    corner.id = 'el-pet-corner';
-    corner.className = 'el-pet-corner';
-    corner.setAttribute('aria-label', '互动宠物窝');
-
-    var rug = document.createElement('div');
-    rug.className = 'el-pet-corner__rug';
-    rug.setAttribute('aria-hidden', 'true');
-    corner.appendChild(rug);
+    ['left', 'right'].forEach(function (side) {
+      var rug = document.createElement('div');
+      rug.className = 'el-pet-rug el-pet-rug--' + side;
+      rug.id = 'el-pet-rug--' + side;
+      rug.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(rug);
+    });
 
     var pets = [];
-    for (var i = 0; i < count; i++) {
-      pets.push(makePet(corner, PET_CONFIGS[i], i));
-    }
-    document.body.appendChild(corner);
+    PET_CONFIGS.forEach(function (cfg, i) {
+      pets.push(makePet(cfg, i));
+    });
 
-    // 缓存每只宠物的中心（用于眼神跟随的方向），resize 时更新
     var cacheCenter = function () {
       pets.forEach(function (p) {
         var r = p.wrap.getBoundingClientRect();
@@ -83,7 +65,6 @@
     cacheCenter();
     window.addEventListener('resize', cacheCenter, { passive: true });
 
-    // 全局鼠标位置
     var mouseX = -9999;
     var mouseY = -9999;
     document.addEventListener('pointermove', function (e) {
@@ -92,58 +73,62 @@
     }, { passive: true });
 
     function tick() {
-      for (var k = 0; k < pets.length; k++) {
-        updatePet(pets[k], mouseX, mouseY);
-      }
+      pets.forEach(function (p) {
+        updatePet(p, mouseX, mouseY);
+      });
       window.requestAnimationFrame(tick);
     }
     window.requestAnimationFrame(tick);
   }
 
-  function makePet(corner, cfg, idx) {
+  function makePet(cfg, idx) {
+    var dh = isMobile ? cfg.dh * 0.72 : cfg.dh;
+    var k = dh / cfg.sh;
+    var dw = cfg.sw * k;
+
     var wrap = document.createElement('div');
     wrap.className = 'el-pet';
-    wrap.style.zIndex = cfg.z;
+    wrap.style.zIndex = String(9994 + Math.min(cfg.z, 3));
+    if (cfg.side === 'left') {
+      wrap.style.left = cfg.offset + 'px';
+    } else {
+      wrap.style.right = cfg.offset + 'px';
+    }
+    wrap.style.bottom = cfg.bottom;
 
     var bubble = document.createElement('div');
     bubble.className = 'el-pet-bubble';
     bubble.setAttribute('role', 'status');
     bubble.setAttribute('aria-live', 'polite');
 
-    var cat = document.createElement('button');
-    cat.type = 'button';
-    cat.className = 'el-pet-cat';
-    cat.setAttribute('aria-label', '和宠物互动');
-    cat.style.backgroundImage = 'url(/img/oneko.gif)';
-    cat.style.backgroundSize = SHEET_W + 'px ' + SHEET_H + 'px';
-    cat.style.filter = 'hue-rotate(' + cfg.hue + 'deg)';
+    var body = document.createElement('button');
+    body.type = 'button';
+    body.className = 'el-pet-body';
+    body.setAttribute('aria-label', '和宠物互动');
+    body.style.width = dw.toFixed(1) + 'px';
+    body.style.height = dh.toFixed(1) + 'px';
+    body.style.backgroundImage = 'url(/img/pet/pets.png)';
+    body.style.backgroundSize = (SHEET_W * k).toFixed(1) + 'px ' + (SHEET_H * k).toFixed(1) + 'px';
+    body.style.backgroundPosition = (-cfg.sx * k).toFixed(1) + 'px ' + (-cfg.sy * k).toFixed(1) + 'px';
 
     wrap.appendChild(bubble);
-    wrap.appendChild(cat);
-    corner.appendChild(wrap);
+    wrap.appendChild(body);
+    document.body.appendChild(wrap);
 
     var pet = {
       wrap: wrap,
-      cat: cat,
+      body: body,
       bubble: bubble,
       cfg: cfg,
       idx: idx,
-      state: 'idle',
-      frame: 0,
-      stateUntil: 0,
-      nextIdleAt: performance.now() + 3000 + Math.random() * 7000,
       lx: 0,
       ly: 0,
+      tilt: 0,
       cx: 0,
       cy: 0,
-      bubbleTimer: null
+      bubbleTimer: null,
+      nextActAt: performance.now() + 600 + Math.random() * 1000
     };
-
-    function setSprite(name, f) {
-      var s = SPRITE[name][f % SPRITE[name].length];
-      cat.style.backgroundPosition = s[0] * DISPLAY + 'px ' + s[1] * DISPLAY + 'px';
-    }
-    pet.setSprite = setSprite;
 
     function say(text, ms) {
       bubble.textContent = text;
@@ -155,82 +140,72 @@
     }
     pet.say = say;
 
-    /* 点击：警觉 + 随机气泡 */
-    cat.addEventListener('click', function () {
-      pet.state = 'alert';
-      pet.stateUntil = performance.now() + 1200;
+    function replay(cls) {
+      body.classList.remove(cls);
+      void body.offsetWidth;
+      body.classList.add(cls);
+    }
+
+    body.addEventListener('click', function () {
+      replay('is-pop');
       say(cfg.phrases[(Math.random() * cfg.phrases.length) | 0]);
     });
 
-    /* 悬停：轻微警觉反应 */
-    cat.addEventListener('mouseenter', function () {
-      pet.state = 'alert';
-      pet.stateUntil = performance.now() + 900;
+    body.addEventListener('mouseenter', function () {
+      body.classList.add('is-hover');
+    });
+    body.addEventListener('mouseleave', function () {
+      body.classList.remove('is-hover');
     });
 
-    setSprite('idle', 0);
-
-    /* 先落一次基础 transform，保证 initPetCorner 里 cacheCenter 能拿到正确位置 */
-    pet.wrap.style.transform =
-      'translate(' + cfg.x + 'px,' + cfg.y + 'px) scale(' + cfg.size + ') scaleX(' + cfg.flip + ')';
-
+    pet.wrap.style.transform = 'translate(0px,0px)';
     return pet;
   }
 
   function updatePet(pet, mouseX, mouseY) {
     var now = performance.now();
 
-    /* 状态机：随机生命行为 */
-    if (pet.state !== 'idle' && now > pet.stateUntil) {
-      pet.state = 'idle';
-      pet.nextIdleAt = now + 10000 + Math.random() * 14000;
-    }
-    if (pet.state === 'idle' && now > pet.nextIdleAt) {
+    /* 随机生命行为 + 主动说话（高频，访客不用点击） */
+    if (now > pet.nextActAt) {
       var pick = Math.random();
-      if (pick < 0.3) {
-        pet.state = 'sleeping';
-        pet.stateUntil = now + 6000;
-      } else if (pick < 0.52) {
-        pet.state = 'scratchSelf';
-        pet.stateUntil = now + 2600;
-      } else if (pick < 0.62) {
-        pet.jumpAt = now;             // 偶尔跳一下
-        pet.cat.classList.add('is-jumping');
-        setTimeout(function () { pet.cat.classList.remove('is-jumping'); }, 700);
-      } else if (pick < 0.75) {
+      if (pick < 0.1) {
+        pet.body.classList.add('is-jumping');
+        setTimeout(function () { pet.body.classList.remove('is-jumping'); }, 750);
+      } else if (pick < 0.18) {
+        pet.body.classList.add('is-stretch');
+        setTimeout(function () { pet.body.classList.remove('is-stretch'); }, 1100);
+      } else if (pick < 0.26) {
+        pet.body.classList.add('is-sway');
+        setTimeout(function () { pet.body.classList.remove('is-sway'); }, 950);
+      } else if (pick < 0.34) {
+        pet.body.classList.add('is-nod');
+        setTimeout(function () { pet.body.classList.remove('is-nod'); }, 900);
+      } else if (pick < 0.42) {
+        pet.body.classList.add('is-wiggle');
+        setTimeout(function () { pet.body.classList.remove('is-wiggle'); }, 700);
+      } else {
         pet.say(pet.cfg.phrases[(Math.random() * pet.cfg.phrases.length) | 0]);
       }
-      pet.nextIdleAt = now + 10000 + Math.random() * 14000;
+      pet.nextActAt = now + 1200 + Math.random() * 2000;
     }
 
-    /* 渲染精灵帧 */
-    if (pet.state === 'sleeping') {
-      pet.setSprite('tired', 0);
-      if (now > pet.stateUntil - 3000) pet.setSprite('sleeping', (pet.frame++ % 2));
-    } else if (pet.state === 'scratchSelf') {
-      pet.setSprite('scratchSelf', (pet.frame++ >> 3) % 3);
-    } else if (pet.state === 'alert') {
-      pet.setSprite('alert', 0);
-    } else {
-      pet.setSprite('idle', 0);
-    }
-
-    /* 眼神跟随：朝鼠标轻微偏移（桌面端，lerp 平滑） */
+    /* 眼神跟随：朝鼠标偏移 + 转头 */
     if (!isMobile && mouseX > -9999 && pet.cx) {
       var dx = mouseX - pet.cx;
       var dy = mouseY - pet.cy;
       var dist = Math.sqrt(dx * dx + dy * dy);
-      var range = dist < 260 ? 3.2 : (dist < 600 ? 1.6 : 0);
+      var range = dist < 380 ? 20 : (dist < 820 ? 8 : 0);
       var tx = dist > 0 ? (dx / dist) * range : 0;
       var ty = dist > 0 ? (dy / dist) * range : 0;
-      pet.lx += (tx - pet.lx) * 0.12;
-      pet.ly += (ty - pet.ly) * 0.12;
+      pet.lx += (tx - pet.lx) * 0.22;
+      pet.ly += (ty - pet.ly) * 0.22;
+      var t = dist < 450 ? (dx / dist) * 10 : 0;
+      pet.tilt += (t - pet.tilt) * 0.22;
     }
 
-    /* 应用 transform：基础位置 + 眼神偏移 + 缩放 + 镜像 */
     pet.wrap.style.transform =
-      'translate(' + (pet.cfg.x + pet.lx).toFixed(2) + 'px,' + (pet.cfg.y + pet.ly).toFixed(2) + 'px)' +
-      ' scale(' + pet.cfg.size + ') scaleX(' + pet.cfg.flip + ')';
+      'translate(' + pet.lx.toFixed(2) + 'px,' + pet.ly.toFixed(2) + 'px)' +
+      ' rotate(' + (pet.tilt || 0).toFixed(2) + 'deg)';
   }
 
   /* ---------------------------------------------------------------------
