@@ -816,21 +816,26 @@ html.no-fx body::after {
   z-index: 1;
 }
 
-/* 首页大标题 */
+/* 首页大标题：宋体/明朝体衬线 + 接近白 + 大字号 + 略拉开字距 */
 #page-header #site-title {
-  font-weight: 800;
-  letter-spacing: 4px;
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', 'MS Mincho', serif;
+  font-weight: 700;
+  font-size: clamp(1.9em, 1.3em + 3vw, 3.2em);
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.97);
   text-shadow: 0 4px 24px rgba(12, 12, 30, 0.45), 0 0 60px hsla(var(--accent-hue), 100%, 81%, 0.35);
   animation: el-title-in 1s var(--el-ease) both;
 }
 
-/* 打字机副标题 */
+/* 副标题：灰白、较小，衬线随主标题，位于主标题下方 */
 #page-header #site-subtitle,
 #page-header #subtitle {
-  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-  letter-spacing: 1.6px;
-  color: #fff;
-  text-shadow: 0 2px 14px rgba(12, 12, 30, 0.6), 0 0 24px hsla(calc(var(--accent-hue) - 74), 100%, 72%, 0.5);
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', serif;
+  font-weight: 400;
+  font-size: clamp(1em, 0.95em + 0.8vw, 1.45em);
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 2px 14px rgba(12, 12, 30, 0.6);
   animation: el-fade-up 1s 0.25s var(--el-ease) both;
 }
 
