@@ -1,24 +1,51 @@
 /* ==========================================================================
-   EndlessLoop · 像素猫 / 光标 / 点击特效样式
+   EndlessLoop · 互动宠物窝 / 点击特效样式
    --------------------------------------------------------------------------
-   1. 自定义光标（B）：默认箭头换成淡紫圆点 + 光晕环
-   2. 光标环增强（A）：中心光点 + hover 态
-   3. 像素猫：左下角精灵 + 说话气泡
-   4. 点击特效：扩散光圈 + 大粒子（爱心/樱花/星星）
+   1. 宠物窝：左下角玻璃小窝 + 多只宠物（缩放/镜像/换色）错落堆叠
+   2. 说话气泡
+   3. 点击特效：Hello Kitty 风格贴纸 + 核心价值观文字
    ========================================================================== */
 
 /* -------------------------------------------------------------------------
-   3. 像素猫 + 说话气泡
+   1. 宠物窝
    ------------------------------------------------------------------------- */
 
-#el-pet {
+#el-pet-corner {
   position: fixed;
-  left: 16px;
-  bottom: 12px;
+  left: 10px;
+  bottom: 10px;
   z-index: 9994;
+  width: 150px;
+  height: 130px;
+  pointer-events: none; /* 容器不挡点击，宠物按钮自己可点 */
+}
+
+/* 淡玻璃底座（小地毯 / 云朵感），不喧宾夺主 */
+.el-pet-corner__rug {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  bottom: -2px;
+  height: 60px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 26px;
+  background: var(--el-glass-bg-soft);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  box-shadow: var(--el-shadow-2), inset 0 1px 0 var(--el-liquid-inset);
+  pointer-events: none;
+}
+
+.el-pet {
+  position: absolute;
+  left: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  transform-origin: bottom center;
+  will-change: transform;
+  pointer-events: none;
 }
 
 .el-pet-cat {
@@ -32,13 +59,11 @@
   background-repeat: no-repeat;
   image-rendering: pixelated;
   cursor: pointer;
+  pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.22));
-  transition: transform 0.15s var(--el-ease);
-}
-
-.el-pet-cat:active {
-  transform: scale(0.88);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
+  /* 呼吸：轻微上下浮动 */
+  animation: el-pet-breathe 3.6s ease-in-out infinite;
 }
 
 .el-pet-cat:focus-visible {
@@ -47,11 +72,46 @@
   border-radius: 12px;
 }
 
-/* 说话气泡 */
+/* 跳一下（临时替代呼吸动画） */
+.el-pet-cat.is-jumping {
+  animation: el-pet-jump 0.7s var(--el-ease);
+}
+
+@keyframes el-pet-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-2.5px) scaleY(1.02);
+  }
+}
+
+@keyframes el-pet-jump {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-18px) scale(1.04);
+  }
+  60% {
+    transform: translateY(0);
+  }
+  80% {
+    transform: translateY(-6px);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   2. 说话气泡（悬浮在宠物上方）
+   ------------------------------------------------------------------------- */
+
 .el-pet-bubble {
-  position: relative;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
   max-width: 200px;
-  margin-bottom: 10px;
   padding: 8px 13px;
   border: 1px solid var(--el-glass-border);
   border-radius: 14px;
@@ -62,26 +122,28 @@
   color: var(--el-text);
   font-size: 13px;
   line-height: 1.5;
+  white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(6px) scale(0.9);
-  transform-origin: bottom left;
+  transform: translateX(-50%) translateY(6px) scale(0.9);
+  transform-origin: bottom center;
   transition: opacity 0.25s var(--el-ease), transform 0.25s var(--el-ease);
 }
 
 .el-pet-bubble.is-visible {
   opacity: 1;
-  transform: none;
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 
 /* 气泡小尾巴 */
 .el-pet-bubble::after {
   content: '';
   position: absolute;
-  left: 22px;
-  bottom: -6px;
+  left: 50%;
+  bottom: -5px;
   width: 10px;
   height: 10px;
+  margin-left: -5px;
   background: var(--el-glass-bg-strong);
   border-right: 1px solid var(--el-glass-border);
   border-bottom: 1px solid var(--el-glass-border);
@@ -89,10 +151,9 @@
 }
 
 /* -------------------------------------------------------------------------
-   4. 点击特效：Hello Kitty 风格贴纸弹出 + 核心价值观文字
+   3. 点击特效：Hello Kitty 风格贴纸 + 核心价值观文字
    ------------------------------------------------------------------------- */
 
-/* 贴纸图案：scale 0.5→1.1→1 + 轻微旋转 + 淡出 */
 .el-click-sticker {
   position: fixed;
   z-index: 9999;
@@ -126,7 +187,6 @@
   }
 }
 
-/* 核心价值观文字：贴纸风格（描边 + 发光），向上漂浮淡出 */
 .el-click-text {
   position: fixed;
   z-index: 9999;
@@ -160,9 +220,25 @@
   }
 }
 
+/* -------------------------------------------------------------------------
+   响应式 / 降级
+   ------------------------------------------------------------------------- */
+
+/* 移动端：整体缩小、更靠边，避免遮挡 */
+@media screen and (max-width: 768px) {
+  #el-pet-corner {
+    left: 6px;
+    bottom: 6px;
+    transform: scale(0.82);
+    transform-origin: bottom left;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .el-pet-cat,
+  .el-pet-cat.is-jumping,
   .el-click-sticker,
   .el-click-text {
-    display: none;
+    animation: none;
   }
 }

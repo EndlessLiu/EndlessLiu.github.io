@@ -1,33 +1,38 @@
 /* ==========================================================================
-   EndlessLoop · 像素猫电子宠物（边上蹲着 / 说话互动）+ 贴纸点击特效
+   EndlessLoop · 互动宠物窝 + 贴纸点击特效
    --------------------------------------------------------------------------
-   像素猫：用经典 oneko 猫素材（公有领域），蹲在左下角：
-     - 常驻 idle，偶尔自己「睡觉 / 挠痒」；
-     - 时不时冒一句话（气泡）跟访客互动；
-     - 点击小猫：警觉表情 + 回一句。
+   宠物窝：用唯一一张 oneko 猫精灵图，通过「缩放 / 镜像 / 换色」变出 5 只
+   形态各异的宠物，错落堆在左下角「玻璃小窝」里：
+     - 眼神跟随鼠标（整只宠物朝鼠标轻微偏移，距离越近越明显）；
+     - 生命动画：呼吸（CSS）、随机眨眼/挠痒/打盹（精灵帧）、偶尔跳一下；
+     - 点击某只 → 不同反应 + 随机气泡文字；悬停 → 轻微警觉反应；
+     - 随机互相转头/小动作，像一群住在博客里的小家伙。
 
-   点击特效（贴纸）：点击页面任意处：
-     - 落点弹出一枚 Hello Kitty 风格贴纸（scale 0.5→1.1→1 + 轻微旋转 + 淡出）；
-     - 同时浮现一个社会主义核心价值观词语（贴纸风格描边文字），向上漂浮淡出。
-     可爱、克制，不堆粒子、不游戏化。
+   点击特效（贴纸）：点击页面任意处弹出 Hello Kitty 风格贴纸 + 核心价值观文字。
 
-   性能：一个 rAF 循环 + 短命 DOM 元素；
-     reduced-motion / 省流 / 移动端下全部关闭。
+   性能：一个 rAF 循环驱动所有宠物的帧与眼神；reduced-motion / 省流 / 移动端降级。
    ========================================================================== */
 
 (function () {
   'use strict';
 
   var CAPS = window.EL_CAPS || {};
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var isMobile = window.matchMedia('(max-width: 768px)').matches;
   var enabled =
     CAPS.reduce !== true &&
     CAPS.saveData !== true &&
-    CAPS.finePointer !== false &&
-    CAPS.narrowScreen !== true;
+    !reduceMotion;
 
   /* ---------------------------------------------------------------------
-     像素猫
+     宠物窝
      --------------------------------------------------------------------- */
+
+  var FRAME = 32;
+  var SCALE = 2.5;              // 精灵基础放大（32px → 80px）
+  var DISPLAY = FRAME * SCALE;  // 80
+  var SHEET_W = 256 * SCALE;    // 640
+  var SHEET_H = 128 * SCALE;    // 320
 
   var SPRITE = {
     idle: [[-3, -3]],
@@ -37,35 +42,68 @@
     sleeping: [[-2, 0], [-2, -1]]
   };
 
-  var FRAME = 32;
-  var SCALE = 2.5;
-  var DISPLAY = FRAME * SCALE;
-  var SHEET_W = 256 * SCALE;
-  var SHEET_H = 128 * SCALE;
-
-  var SAY_IDLE = [
-    '喵~ 欢迎来玩呀',
-    '今天也要加油鸭！',
-    '点我一下试试~',
-    '在写代码还是摸鱼呀？',
-    '考研加油！',
-    '跑完步记得拉伸哦',
-    '夜深了，早点休息~'
+  /* 宠物配置：size=缩放 / flip=镜像 / hue=换色 / x,y=窝内坐标 / z=前后层 / phrases=性格台词 */
+  var PET_CONFIGS = [
+    { size: 1.1,  flip: 1,  hue: 0,   x: 52,  y: -78,  z: 3, phrases: ['喵~ 你好呀', '今天也要加油鸭！', '在写代码还是摸鱼？', '考研加油！', '点我一下试试~'] },
+    { size: 0.85, flip: -1, hue: 90,  x: 10,  y: -60,  z: 2, phrases: ['嘿嘿，被你发现啦', '摸鱼快乐~', '记得多喝水哦', '今天阳光真好~'] },
+    { size: 0.92, flip: 1,  hue: 190, x: 96,  y: -56,  z: 1, phrases: ['呼…有点困了', 'zzZ…', '别吵我睡觉~', '梦里也在写代码…'] },
+    { size: 0.72, flip: -1, hue: 280, x: 32,  y: -104, z: 4, phrases: ['你在看我吗？', '眼睛会跟着你哦~', '我最活泼啦！', '来呀来呀~'] },
+    { size: 0.78, flip: 1,  hue: 330, x: 82,  y: -98,  z: 2, phrases: ['夜深了，早点休息~', '跑完步记得拉伸哦', '今天读了几页书呀？', '慢慢来，比较快~'] }
   ];
 
-  var SAY_CLICK = [
-    '喵！别戳我~',
-    '嘿嘿，被你发现啦',
-    '摸鱼快乐~',
-    '喵呜~ 你好呀'
-  ];
+  var count = isMobile ? 3 : 5;
 
-  function initCat() {
-    if (!enabled || document.getElementById('el-pet')) return;
+  function initPetCorner() {
+    if (!enabled || document.getElementById('el-pet-corner')) return;
 
-    var pet = document.createElement('div');
-    pet.id = 'el-pet';
-    pet.setAttribute('aria-label', '像素猫');
+    var corner = document.createElement('div');
+    corner.id = 'el-pet-corner';
+    corner.className = 'el-pet-corner';
+    corner.setAttribute('aria-label', '互动宠物窝');
+
+    var rug = document.createElement('div');
+    rug.className = 'el-pet-corner__rug';
+    rug.setAttribute('aria-hidden', 'true');
+    corner.appendChild(rug);
+
+    var pets = [];
+    for (var i = 0; i < count; i++) {
+      pets.push(makePet(corner, PET_CONFIGS[i], i));
+    }
+    document.body.appendChild(corner);
+
+    // 缓存每只宠物的中心（用于眼神跟随的方向），resize 时更新
+    var cacheCenter = function () {
+      pets.forEach(function (p) {
+        var r = p.wrap.getBoundingClientRect();
+        p.cx = r.left + r.width / 2;
+        p.cy = r.top + r.height / 2;
+      });
+    };
+    cacheCenter();
+    window.addEventListener('resize', cacheCenter, { passive: true });
+
+    // 全局鼠标位置
+    var mouseX = -9999;
+    var mouseY = -9999;
+    document.addEventListener('pointermove', function (e) {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    }, { passive: true });
+
+    function tick() {
+      for (var k = 0; k < pets.length; k++) {
+        updatePet(pets[k], mouseX, mouseY);
+      }
+      window.requestAnimationFrame(tick);
+    }
+    window.requestAnimationFrame(tick);
+  }
+
+  function makePet(corner, cfg, idx) {
+    var wrap = document.createElement('div');
+    wrap.className = 'el-pet';
+    wrap.style.zIndex = cfg.z;
 
     var bubble = document.createElement('div');
     bubble.className = 'el-pet-bubble';
@@ -75,99 +113,130 @@
     var cat = document.createElement('button');
     cat.type = 'button';
     cat.className = 'el-pet-cat';
-    cat.setAttribute('aria-label', '和像素猫互动');
-
-    pet.appendChild(bubble);
-    pet.appendChild(cat);
-    document.body.appendChild(pet);
-
+    cat.setAttribute('aria-label', '和宠物互动');
     cat.style.backgroundImage = 'url(/img/oneko.gif)';
     cat.style.backgroundSize = SHEET_W + 'px ' + SHEET_H + 'px';
+    cat.style.filter = 'hue-rotate(' + cfg.hue + 'deg)';
 
-    var state = 'idle';
-    var frame = 0;
-    var stateUntil = 0;
-    var nextIdleAt = 0;
-    var rafId = null;
-    var bubbleTimer = null;
+    wrap.appendChild(bubble);
+    wrap.appendChild(cat);
+    corner.appendChild(wrap);
+
+    var pet = {
+      wrap: wrap,
+      cat: cat,
+      bubble: bubble,
+      cfg: cfg,
+      idx: idx,
+      state: 'idle',
+      frame: 0,
+      stateUntil: 0,
+      nextIdleAt: performance.now() + 3000 + Math.random() * 7000,
+      lx: 0,
+      ly: 0,
+      cx: 0,
+      cy: 0,
+      bubbleTimer: null
+    };
 
     function setSprite(name, f) {
       var s = SPRITE[name][f % SPRITE[name].length];
       cat.style.backgroundPosition = s[0] * DISPLAY + 'px ' + s[1] * DISPLAY + 'px';
     }
+    pet.setSprite = setSprite;
 
     function say(text, ms) {
       bubble.textContent = text;
       bubble.classList.add('is-visible');
-      if (bubbleTimer) clearTimeout(bubbleTimer);
-      bubbleTimer = setTimeout(function () {
+      if (pet.bubbleTimer) clearTimeout(pet.bubbleTimer);
+      pet.bubbleTimer = setTimeout(function () {
         bubble.classList.remove('is-visible');
-      }, ms || 3600);
+      }, ms || 2200);
     }
+    pet.say = say;
 
-    function enter(name, dur) {
-      state = name;
-      frame = 0;
-      stateUntil = performance.now() + dur;
-    }
+    /* 点击：警觉 + 随机气泡 */
+    cat.addEventListener('click', function () {
+      pet.state = 'alert';
+      pet.stateUntil = performance.now() + 1200;
+      say(cfg.phrases[(Math.random() * cfg.phrases.length) | 0]);
+    });
 
-    function react() {
-      enter('alert', 1100);
-      say(SAY_CLICK[(Math.random() * SAY_CLICK.length) | 0]);
-    }
-
-    cat.addEventListener('click', react);
-
-    function tick(now) {
-      if (state !== 'idle' && now > stateUntil) {
-        state = 'idle';
-        nextIdleAt = now + 15000 + Math.random() * 15000;
-      }
-
-      if (state === 'idle' && now > nextIdleAt) {
-        var pick = Math.random();
-        if (pick < 0.45) enter('sleeping', 6000);
-        else if (pick < 0.75) enter('scratchSelf', 2400);
-        else say(SAY_IDLE[(Math.random() * SAY_IDLE.length) | 0]);
-        nextIdleAt = now + 15000 + Math.random() * 15000;
-      }
-
-      if (state === 'sleeping') {
-        setSprite('tired', 0);
-        if (now > stateUntil - 3000) setSprite('sleeping', (frame++ % 2));
-      } else if (state === 'scratchSelf') {
-        setSprite('scratchSelf', (frame++ >> 3) % 3);
-      } else if (state === 'alert') {
-        setSprite('alert', 0);
-      } else {
-        setSprite('idle', 0);
-      }
-
-      rafId = requestAnimationFrame(tick);
-    }
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.hidden) {
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = null;
-      } else if (!rafId) {
-        rafId = requestAnimationFrame(tick);
-      }
+    /* 悬停：轻微警觉反应 */
+    cat.addEventListener('mouseenter', function () {
+      pet.state = 'alert';
+      pet.stateUntil = performance.now() + 900;
     });
 
     setSprite('idle', 0);
-    nextIdleAt = performance.now() + 6000;
-    setTimeout(function () {
-      say(SAY_IDLE[(Math.random() * SAY_IDLE.length) | 0]);
-    }, 1200);
-    rafId = requestAnimationFrame(tick);
+
+    /* 先落一次基础 transform，保证 initPetCorner 里 cacheCenter 能拿到正确位置 */
+    pet.wrap.style.transform =
+      'translate(' + cfg.x + 'px,' + cfg.y + 'px) scale(' + cfg.size + ') scaleX(' + cfg.flip + ')';
+
+    return pet;
+  }
+
+  function updatePet(pet, mouseX, mouseY) {
+    var now = performance.now();
+
+    /* 状态机：随机生命行为 */
+    if (pet.state !== 'idle' && now > pet.stateUntil) {
+      pet.state = 'idle';
+      pet.nextIdleAt = now + 10000 + Math.random() * 14000;
+    }
+    if (pet.state === 'idle' && now > pet.nextIdleAt) {
+      var pick = Math.random();
+      if (pick < 0.3) {
+        pet.state = 'sleeping';
+        pet.stateUntil = now + 6000;
+      } else if (pick < 0.52) {
+        pet.state = 'scratchSelf';
+        pet.stateUntil = now + 2600;
+      } else if (pick < 0.62) {
+        pet.jumpAt = now;             // 偶尔跳一下
+        pet.cat.classList.add('is-jumping');
+        setTimeout(function () { pet.cat.classList.remove('is-jumping'); }, 700);
+      } else if (pick < 0.75) {
+        pet.say(pet.cfg.phrases[(Math.random() * pet.cfg.phrases.length) | 0]);
+      }
+      pet.nextIdleAt = now + 10000 + Math.random() * 14000;
+    }
+
+    /* 渲染精灵帧 */
+    if (pet.state === 'sleeping') {
+      pet.setSprite('tired', 0);
+      if (now > pet.stateUntil - 3000) pet.setSprite('sleeping', (pet.frame++ % 2));
+    } else if (pet.state === 'scratchSelf') {
+      pet.setSprite('scratchSelf', (pet.frame++ >> 3) % 3);
+    } else if (pet.state === 'alert') {
+      pet.setSprite('alert', 0);
+    } else {
+      pet.setSprite('idle', 0);
+    }
+
+    /* 眼神跟随：朝鼠标轻微偏移（桌面端，lerp 平滑） */
+    if (!isMobile && mouseX > -9999 && pet.cx) {
+      var dx = mouseX - pet.cx;
+      var dy = mouseY - pet.cy;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var range = dist < 260 ? 3.2 : (dist < 600 ? 1.6 : 0);
+      var tx = dist > 0 ? (dx / dist) * range : 0;
+      var ty = dist > 0 ? (dy / dist) * range : 0;
+      pet.lx += (tx - pet.lx) * 0.12;
+      pet.ly += (ty - pet.ly) * 0.12;
+    }
+
+    /* 应用 transform：基础位置 + 眼神偏移 + 缩放 + 镜像 */
+    pet.wrap.style.transform =
+      'translate(' + (pet.cfg.x + pet.lx).toFixed(2) + 'px,' + (pet.cfg.y + pet.ly).toFixed(2) + 'px)' +
+      ' scale(' + pet.cfg.size + ') scaleX(' + pet.cfg.flip + ')';
   }
 
   /* ---------------------------------------------------------------------
      贴纸点击特效（Hello Kitty 风格贴纸 + 核心价值观文字）
      --------------------------------------------------------------------- */
 
-  /* 文字反馈：社会主义核心价值观，每次随机、避免连续重复 */
   var FEEDBACK = [
     '富强', '民主', '文明', '和谐', '自由', '平等',
     '公正', '法治', '爱国', '敬业', '诚信', '友善'
@@ -183,7 +252,6 @@
     return FEEDBACK[i];
   }
 
-  /* 移动端降低点击特效频率 */
   var isCoarse = window.matchMedia('(max-width: 768px)').matches;
   var lastFxAt = 0;
 
@@ -205,14 +273,12 @@
   }
 
   function stickerClick(x, y) {
-    /* 移动端降频：两次特效之间至少间隔 350ms */
     if (isCoarse) {
       var now = Date.now();
       if (now - lastFxAt < 350) return;
       lastFxAt = now;
     }
 
-    /* 贴纸图案：点击处弹出（scale 0.5→1.1→1 + 轻微旋转 + 淡出） */
     var sticker = document.createElement('img');
     sticker.className = 'el-click-sticker';
     sticker.src = '/img/click.png';
@@ -222,7 +288,6 @@
     document.body.appendChild(sticker);
     autoRemove(sticker);
 
-    /* 核心价值观文字：贴纸风格，向上漂浮淡出 */
     var text = document.createElement('span');
     text.className = 'el-click-text';
     text.textContent = pickFeedback();
@@ -238,7 +303,7 @@
 
   function boot() {
     if (!enabled) return;
-    initCat();
+    initPetCorner();
     initClickFx();
   }
 
