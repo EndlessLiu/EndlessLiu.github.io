@@ -1,9 +1,15 @@
 /* ==========================================================================
-   EndlessLoop · 照片墙交互（分类筛选 + 灯箱）
+   EndlessLoop · 照片墙交互（分类首页 ↔ 画廊 + 灯箱）
    --------------------------------------------------------------------------
    挂在 #photo-wall 上（由 scripts/photo-wall.js 的 {% photowall %} 输出），
    页面没有照片墙时静默返回。
-   灯箱是完整版：左右切换 + 方向键 + Esc 关闭 + 点遮罩关闭。
+
+   两级视图：
+     - 分类首页：点 .photo-wall__card 打开对应分类的画廊；
+     - 画廊：显示当前分类的 .photo-wall__section，点「全部分类」返回首页。
+
+   灯箱是完整版：左右切换 + 方向键 + Esc 关闭 + 点遮罩关闭，
+   且只在「当前分类」的照片范围内前后切换。
    ========================================================================== */
 
 (function () {
@@ -20,39 +26,46 @@
 
   function boot() {
     var wall = document.getElementById('photo-wall');
-    if (!wall) return;
-    // pjax 防重复挂载：灯箱已建就跳过
-    if (wall.dataset.wallReady === '1') return;
+    if (!wall || wall.dataset.wallReady === '1') return;
     wall.dataset.wallReady = '1';
 
-    var tabs = Array.prototype.slice.call(wall.querySelectorAll('.photo-wall__tab'));
-    var items = Array.prototype.slice.call(wall.querySelectorAll('.photo-wall__item'));
+    var index = wall.querySelector('.photo-wall__index');
+    var gallery = wall.querySelector('.photo-wall__gallery');
+    var backBtn = wall.querySelector('.photo-wall__gallery-back');
+    var titleEl = wall.querySelector('.photo-wall__gallery-title');
+    var cards = wall.querySelectorAll('.photo-wall__card');
+    var sections = wall.querySelectorAll('.photo-wall__section');
 
-    /* ---- 分类筛选 ---- */
-    function visibleItems() {
-      return items.filter(function (it) {
-        return !it.classList.contains('is-hidden');
-      });
+    /* ---- 当前分类下可见的照片 ---- */
+    function activeItems() {
+      var s = wall.querySelector('.photo-wall__section:not([hidden])');
+      return s ? Array.prototype.slice.call(s.querySelectorAll('.photo-wall__item')) : [];
     }
 
-    tabs.forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        var filter = tab.getAttribute('data-filter');
-        tabs.forEach(function (t) {
-          var on = t === tab;
-          t.classList.toggle('is-active', on);
-          t.setAttribute('aria-pressed', on ? 'true' : 'false');
-        });
-        items.forEach(function (it) {
-          var show = filter === 'all' || it.getAttribute('data-category') === filter;
-          it.classList.toggle('is-hidden', !show);
-        });
+    function openCategory(zh) {
+      sections.forEach(function (s) {
+        s.hidden = s.getAttribute('data-category') !== zh;
+      });
+      titleEl.textContent = zh;
+      index.hidden = true;
+      gallery.hidden = false;
+      window.scrollTo(0, 0);
+    }
+
+    function closeCategory() {
+      index.hidden = false;
+      gallery.hidden = true;
+      window.scrollTo(0, 0);
+    }
+
+    Array.prototype.forEach.call(cards, function (card) {
+      card.addEventListener('click', function () {
+        openCategory(card.getAttribute('data-pw-open'));
       });
     });
+    backBtn.addEventListener('click', closeCategory);
 
     /* ---- 灯箱 ---- */
-    if (!items.length) return;
-
     var lightbox = document.createElement('div');
     lightbox.className = 'photo-wall-lightbox';
     lightbox.setAttribute('role', 'dialog');
@@ -69,14 +82,13 @@
 
     var lbImg = lightbox.querySelector('.photo-wall-lightbox__img');
     var lbCaption = lightbox.querySelector('.photo-wall-lightbox__caption');
-    var index = 0;
+    var idx = 0;
 
-    // 在「当前可见」的照片里定位到第 i 张（负数/越界回绕）
     function openAt(i) {
-      var vis = visibleItems();
+      var vis = activeItems();
       if (!vis.length) return;
-      index = ((i % vis.length) + vis.length) % vis.length;
-      var it = vis[index];
+      idx = ((i % vis.length) + vis.length) % vis.length;
+      var it = vis[idx];
       lbImg.src = it.querySelector('img').getAttribute('src');
       lbCaption.textContent = it.getAttribute('data-caption') || '';
       lightbox.classList.add('is-open');
@@ -88,21 +100,21 @@
       document.body.style.overflow = '';
     }
 
-    items.forEach(function (it, i) {
-      it.addEventListener('click', function () {
-        // 传 items 的下标，openAt 内部会映射到可见列表
-        var vis = visibleItems();
-        var idx = vis.indexOf(it);
-        openAt(idx >= 0 ? idx : 0);
-      });
+    // 画廊里点照片开灯箱（事件委托，item 随分类切换而变，不逐个绑）
+    wall.querySelector('.photo-wall__gallery-body').addEventListener('click', function (e) {
+      var it = e.target.closest ? e.target.closest('.photo-wall__item') : null;
+      if (!it) return;
+      var vis = activeItems();
+      var i = vis.indexOf(it);
+      openAt(i >= 0 ? i : 0);
     });
 
     lightbox.querySelector('.photo-wall-lightbox__close').addEventListener('click', close);
     lightbox.querySelector('.photo-wall-lightbox__prev').addEventListener('click', function () {
-      openAt(index - 1);
+      openAt(idx - 1);
     });
     lightbox.querySelector('.photo-wall-lightbox__next').addEventListener('click', function () {
-      openAt(index + 1);
+      openAt(idx + 1);
     });
     // 点遮罩空白处关闭
     lightbox.addEventListener('click', function (e) {
@@ -112,8 +124,8 @@
     document.addEventListener('keydown', function (e) {
       if (!lightbox.classList.contains('is-open')) return;
       if (e.key === 'Escape') close();
-      else if (e.key === 'ArrowLeft') openAt(index - 1);
-      else if (e.key === 'ArrowRight') openAt(index + 1);
+      else if (e.key === 'ArrowLeft') openAt(idx - 1);
+      else if (e.key === 'ArrowRight') openAt(idx + 1);
     });
   }
 

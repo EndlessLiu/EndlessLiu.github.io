@@ -1,23 +1,181 @@
 /* ==========================================================================
-   EndlessLoop · 照片墙样式
+   EndlessLoop · 照片墙样式（Bento Grid 摄影画廊版）
    --------------------------------------------------------------------------
-   依赖 custom.css 的设计令牌（--el-*）。
-   结构由 scripts/photo-wall.js 的 {% photowall %} 标签输出，
-   筛选 / 灯箱交互由 source/js/photo-wall.js 驱动。
+   结构由 scripts/photo-wall.js 的 {% photowall %} 输出：
+     - .photo-wall__index > .photo-wall__bento > .photo-wall__card  （分类首页）
+     - .photo-wall__gallery > .photo-wall__section > .photo-wall__masonry  （画廊）
+   交互由 source/js/photo-wall.js 驱动（卡片↔画廊、灯箱）。
+
+   设计语言：不规则 Bento Grid + 半透明深色毛玻璃信息框，浅色简洁背景，
+   图片铺满卡片（object-fit: cover，不拉伸），hover 轻微放大 + 亮度变化。
+   复用 custom.css 的设计令牌（--el-*）。
    ========================================================================== */
 
-/* ---- 分类筛选条 ---- */
-.photo-wall__tabs {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin: 8px 0 26px;
+/* -------------------------------------------------------------------------
+   0. 容器：舒适阅读宽度 + 左右留白
+   ------------------------------------------------------------------------- */
+.photo-wall {
+  max-width: 1120px;
+  margin: 0 auto;
 }
 
-.photo-wall__tab {
-  padding: 7px 16px;
-  border: 1px solid var(--el-glass-border-dim);
+/* -------------------------------------------------------------------------
+   1. 分类首页 · Bento Grid
+   ------------------------------------------------------------------------- */
+.photo-wall__bento {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 92px;
+  gap: 18px;
+}
+
+/* 卡片尺寸档位（grid-row 跨度，形成大小不一、有层次的拼贴） */
+.photo-wall__card--hero { grid-column: 1 / -1; grid-row: span 6; }
+.photo-wall__card--tall { grid-row: span 5; }
+.photo-wall__card--med  { grid-row: span 4; }
+.photo-wall__card--wide { grid-column: 1 / -1; grid-row: span 4; }
+
+.photo-wall__card {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  border-radius: 22px;
+  padding: 0;
+  margin: 0;
+  background: #e6e8f0; /* 无封面时的兜底底 */
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* 一圈极淡的描边，让卡片在浅色背景上有边界感 */
+  box-shadow: 0 2px 10px rgba(20, 24, 48, 0.06), 0 18px 40px rgba(20, 24, 48, 0.10);
+}
+
+/* 背景照片：绝对定位铺满，cover 不拉伸 */
+.photo-wall__card-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s var(--el-ease), filter 0.7s var(--el-ease);
+}
+
+/* 卡片底部一点暗化渐变，保证信息框在任何照片上都可读 */
+.photo-wall__card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 10, 22, 0) 40%, rgba(8, 10, 22, 0.34) 100%);
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------
+   2. 毛玻璃信息框
+   ------------------------------------------------------------------------- */
+.photo-wall__card-info {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  max-width: calc(100% - 36px);
+  padding: 16px 18px 15px;
+  border-radius: 16px;
+  background: rgba(12, 14, 26, 0.42);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32);
+  color: #fff;
+  transition: transform 0.45s var(--el-ease), background 0.45s var(--el-ease),
+    border-color 0.45s var(--el-ease);
+}
+
+/* 英文分类名：小字距大写，现代杂志感 */
+.photo-wall__card-en {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+/* 中文大标题：醒目、有视觉冲击力 */
+.photo-wall__card-zh {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.12;
+}
+
+/* 照片数量 */
+.photo-wall__card-count {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.86;
+}
+
+.photo-wall__card-arrow {
+  display: inline-block;
+  margin-left: 2px;
+  font-size: 14px;
+  transition: transform 0.35s var(--el-ease);
+}
+
+/* hero 卡片的信息框更大，标题更有冲击力 */
+.photo-wall__card--hero .photo-wall__card-info {
+  padding: 20px 22px 19px;
+  border-radius: 18px;
+}
+.photo-wall__card--hero .photo-wall__card-zh {
+  font-size: 34px;
+}
+
+/* -------------------------------------------------------------------------
+   3. hover / 焦点
+   ------------------------------------------------------------------------- */
+.photo-wall__card:hover .photo-wall__card-img {
+  transform: scale(1.06);
+  filter: brightness(1.07);
+}
+
+.photo-wall__card:hover .photo-wall__card-info {
+  transform: translateY(-4px);
+  background: rgba(12, 14, 26, 0.52);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.photo-wall__card:hover .photo-wall__card-arrow {
+  transform: translate(2px, -2px);
+}
+
+.photo-wall__card:focus-visible {
+  outline: 3px solid hsla(var(--accent-hue), 100%, 81%, 0.85);
+  outline-offset: 3px;
+}
+
+/* -------------------------------------------------------------------------
+   4. 画廊视图
+   ------------------------------------------------------------------------- */
+.photo-wall__gallery-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.photo-wall__gallery-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid var(--el-glass-border);
   border-radius: 999px;
   background: var(--el-glass-bg-soft);
   backdrop-filter: blur(8px);
@@ -25,103 +183,62 @@
   color: var(--el-text-soft);
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.02em;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.3s var(--el-ease), color 0.3s var(--el-ease),
-    border-color 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease),
+  transition: color 0.3s var(--el-ease), border-color 0.3s var(--el-ease),
     transform 0.3s var(--el-ease-back);
 }
 
-.photo-wall__tab:hover {
-  transform: translateY(-2px);
+.photo-wall__gallery-back:hover {
   color: var(--el-sakura-deep);
   border-color: hsla(var(--accent-hue), 100%, 81%, 0.55);
+  transform: translateX(-2px);
 }
 
-.photo-wall__tab.is-active {
-  background: var(--el-grad-main);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 8px 20px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.4);
-}
-
-.photo-wall__tab:focus-visible {
+.photo-wall__gallery-back:focus-visible {
   outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
   outline-offset: 2px;
 }
 
-/* ---- 照片网格 ---- */
-.photo-wall__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+.photo-wall__gallery-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--el-text);
+}
+
+/* masonry：自然宽高比，不规则、杂志式照片墙 */
+.photo-wall__masonry {
+  column-count: 3;
+  column-gap: 16px;
 }
 
 .photo-wall__item {
   position: relative;
-  margin: 0;
-  border: 1px solid var(--el-glass-border);
-  border-radius: var(--el-radius-lg);
-  background: var(--el-glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: var(--el-shadow-1), inset 0 1px 0 var(--el-liquid-inset);
+  break-inside: avoid;
+  margin: 0 0 16px;
+  border-radius: 14px;
   overflow: hidden;
+  background: var(--el-grad-main); /* 图片加载前的兜底底 */
   cursor: zoom-in;
-  transition: transform 0.4s var(--el-ease), box-shadow 0.4s var(--el-ease),
-    border-color 0.4s var(--el-ease);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.photo-wall__item.is-hidden {
-  display: none;
-}
-
-.photo-wall__item:hover {
-  transform: translateY(-6px);
-  border-color: rgba(255, 255, 255, 0.9);
-  box-shadow: var(--el-shadow-3), var(--el-shadow-glow),
-    inset 0 1px 0 var(--el-liquid-edge);
-}
-
-.photo-wall__frame {
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  background: var(--el-grad-main); /* 图片加载前的兜底底色 */
-}
-
-.photo-wall__frame img {
+.photo-wall__item img {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.6s var(--el-ease);
+  height: auto;
+  transition: transform 0.6s var(--el-ease), filter 0.6s var(--el-ease);
 }
 
-.photo-wall__item:hover .photo-wall__frame img {
-  transform: scale(1.08);
+.photo-wall__item:hover img {
+  transform: scale(1.04);
+  filter: brightness(1.05);
 }
 
-/* caption：悬浮时从底部淡入 */
-.photo-wall__caption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 30px 12px 10px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
-  color: #fff;
-  font-size: 12px;
-  line-height: 1.5;
-  pointer-events: none;
-  opacity: 0;
-  transform: translateY(6px);
-  transition: opacity 0.35s var(--el-ease), transform 0.35s var(--el-ease);
-}
-
-.photo-wall__item:hover .photo-wall__caption {
-  opacity: 1;
-  transform: none;
+.photo-wall__section[hidden] {
+  display: none;
 }
 
 .photo-wall__empty {
@@ -131,7 +248,9 @@
   font-size: 13px;
 }
 
-/* ---- 灯箱 ---- */
+/* -------------------------------------------------------------------------
+   5. 灯箱（沿用原结构，微调）
+   ------------------------------------------------------------------------- */
 .photo-wall-lightbox {
   position: fixed;
   inset: 0;
@@ -205,43 +324,78 @@
   outline-offset: 2px;
 }
 
-.photo-wall-lightbox__close {
-  top: 18px;
-  right: 20px;
+.photo-wall-lightbox__close { top: 18px; right: 20px; }
+.photo-wall-lightbox__prev { top: 50%; left: 20px; margin-top: -23px; }
+.photo-wall-lightbox__next { top: 50%; right: 20px; margin-top: -23px; }
+
+/* -------------------------------------------------------------------------
+   6. 响应式
+   ------------------------------------------------------------------------- */
+
+/* 平板：画廊两列，bento 行高略小 */
+@media screen and (max-width: 900px) {
+  .photo-wall__bento {
+    grid-auto-rows: 80px;
+    gap: 14px;
+  }
+  .photo-wall__masonry {
+    column-count: 2;
+  }
 }
 
-.photo-wall-lightbox__prev {
-  top: 50%;
-  left: 20px;
-  margin-top: -23px;
-}
+/* 手机：单列，卡片统一高度（hero 更高一点保持主次） */
+@media screen and (max-width: 640px) {
+  .photo-wall__bento {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    gap: 14px;
+  }
 
-.photo-wall-lightbox__next {
-  top: 50%;
-  right: 20px;
-  margin-top: -23px;
-}
+  .photo-wall__card--hero,
+  .photo-wall__card--tall,
+  .photo-wall__card--med,
+  .photo-wall__card--wide {
+    grid-column: 1 / -1;
+    grid-row: span 1;
+    aspect-ratio: 3 / 2;
+  }
 
-/* 窄屏：左右切换键贴到边缘内侧，避免和内容打架 */
-@media screen and (max-width: 768px) {
+  .photo-wall__card--hero {
+    aspect-ratio: 4 / 5;
+  }
+
+  .photo-wall__card--hero .photo-wall__card-zh {
+    font-size: 28px;
+  }
+
+  .photo-wall__card-zh {
+    font-size: 22px;
+  }
+
+  .photo-wall__masonry {
+    column-count: 1;
+  }
+
+  .photo-wall__gallery-title {
+    font-size: 20px;
+  }
+
   .photo-wall-lightbox {
     padding: 12px;
   }
-
-  .photo-wall-lightbox__prev {
-    left: 8px;
-  }
-
-  .photo-wall-lightbox__next {
-    right: 8px;
-  }
+  .photo-wall-lightbox__prev { left: 8px; }
+  .photo-wall-lightbox__next { right: 8px; }
 }
 
+/* -------------------------------------------------------------------------
+   7. 减少动效
+   ------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-  .photo-wall__item,
-  .photo-wall__tab,
-  .photo-wall__frame img,
-  .photo-wall__caption {
+  .photo-wall__card-img,
+  .photo-wall__card-info,
+  .photo-wall__card-arrow,
+  .photo-wall__item img,
+  .photo-wall__gallery-back {
     transition: none;
   }
 }
