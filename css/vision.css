@@ -57,8 +57,9 @@
     rgba(255, 255, 255, 0.16) 53%,
     transparent 62%
   );
-  animation: el-beam-sweep 9s ease-in-out infinite;
-  will-change: transform, opacity;
+  /* 光束扫过动画已停（背景完全静止）。元素仍注入，供外观面板「背景流光」
+     开关判存在；opacity 恒为 0，不可见。 */
+  animation: none;
 }
 
 /* 9s 一轮，刻意和极光的 26s 不同步 ——

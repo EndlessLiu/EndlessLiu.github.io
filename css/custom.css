@@ -396,9 +396,9 @@ body:has(#page-header.full_page) #web_bg {
     radial-gradient(30% 36% at 32% 88%, hsla(calc(var(--accent-hue) - 110), 77%, 64%, 0.34), transparent 68%);
   background-size: 46px 46px, 46px 46px, auto, auto, auto, auto;
   background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat;
-  animation: el-aurora 26s ease-in-out infinite alternate,
-    el-grid-pan 40s linear infinite;
-  will-change: transform;
+  /* 背景改为完全静止：极光的「放大 + 漂移」与网格平移动画都停掉，
+     只保留静态的彩色光晕 + 科技网格（不再动）。 */
+  animation: none;
 }
 
 /* 粒子画布：由 site-fx.js 注入 */
