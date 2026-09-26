@@ -60,15 +60,6 @@
     };
   }
 
-  /* 复用 site-fx.js 建立的全局指针总线。
-     本文件有两处要跟踪鼠标（背景视差、光标环），
-     如果各自 addEventListener，全站就会有四个 pointermove。
-     site-fx.js 没加载时退回自己监听，保证单独引入也能跑。 */
-  function onPointer(fn) {
-    if (window.EL_POINTER) window.EL_POINTER.on(fn);
-    else document.addEventListener('pointermove', fn, { passive: true });
-  }
-
   /* =====================================================================
      1. 背景流光 + 视差
      ===================================================================== */
@@ -86,7 +77,6 @@
     }
 
     // 背景不再做视差 / 放大 / 模糊（壁纸静止清晰），只保留上面的流光光束注入。
-    // onPointer 仍被 initCursorRing（光标环）使用，这里删除不影响它。
   }
 
   /* =====================================================================
@@ -208,71 +198,8 @@
   }
 
   /* =====================================================================
-     4. 跟随光标的玻璃环 + 点击波纹
+     4. 点击波纹
      ===================================================================== */
-
-  function initCursorRing() {
-    if (!allowMotion || !CAPS.finePointer) return;
-    if (document.getElementById('el-cursor-ring')) return;
-
-    var ring = document.createElement('div');
-    ring.id = 'el-cursor-ring';
-    ring.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(ring);
-
-    var HOT = 'a, button, .social-icon, .el-music-mini, .page-number, input, textarea, [role="button"]';
-
-    var tx = 0;
-    var ty = 0;
-    var cx = 0;
-    var cy = 0;
-    var raf = null;
-    var shown = false;
-
-    function tick() {
-      cx += (tx - cx) * 0.18;
-      cy += (ty - cy) * 0.18;
-      ring.style.transform = 'translate3d(' + cx.toFixed(1) + 'px,' + cy.toFixed(1) + 'px,0)';
-
-      if (Math.abs(tx - cx) < 0.2 && Math.abs(ty - cy) < 0.2) {
-        cx = tx;
-        cy = ty;
-        raf = null;
-        return;
-      }
-      raf = window.requestAnimationFrame(tick);
-    }
-
-    onPointer(function (e) {
-      tx = e.clientX;
-      ty = e.clientY;
-
-      if (!shown) {
-        // 首帧不要从 (0,0) 滑过来
-        shown = true;
-        cx = tx;
-        cy = ty;
-        document.body.classList.add('el-cursor-on');
-      }
-
-      if (!raf) raf = window.requestAnimationFrame(tick);
-    });
-
-    document.addEventListener('mouseleave', function () {
-      document.body.classList.remove('el-cursor-on');
-      shown = false;
-    });
-
-    document.addEventListener(
-      'mouseover',
-      function (e) {
-        var t = e.target;
-        if (!t || t.nodeType !== 1) return;
-        document.body.classList.toggle('el-cursor-hot', !!(t.closest && t.closest(HOT)));
-      },
-      { passive: true }
-    );
-  }
 
   var RIPPLE_SELECTOR = [
     '#card-info-btn',
@@ -495,7 +422,6 @@
     initHero();
     initGoUpRing();
     initGiscusGuard();
-    initCursorRing();
     initRipple();
     initNavActive();
   }

@@ -16,7 +16,7 @@
      5.  代码块科技元素
      6.  返回顶部进度环
      7.  留言板
-     8.  鼠标交互（跟随光标的玻璃环 / 点击波纹）
+     8.  鼠标交互（点击波纹）
      9.  深色模式
      10. 响应式与性能降级
 
@@ -628,64 +628,11 @@ i.el-icon-xhs {
   color: var(--el-violet);
 }
 
-/* ==========================================================================
-   8. 鼠标交互
-   ========================================================================== */
-
-/* 跟随光标的玻璃环：JS 用 lerp 追赶鼠标，所以这里只负责外观。
-   只在精确指针设备上显示（CSS 再兜一层，JS 里也判了一次）。 */
-#el-cursor-ring {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9998;
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
-  border: 1.5px solid hsla(var(--accent-hue), 100%, 81%, 0.6);
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 70%);
-  box-shadow: 0 0 12px hsla(var(--accent-hue), 100%, 81%, 0.4);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s var(--el-ease), width 0.3s var(--el-ease-back),
-    height 0.3s var(--el-ease-back), margin 0.3s var(--el-ease-back),
-    border-color 0.3s var(--el-ease);
-  will-change: transform;
-}
-
-body.el-cursor-on #el-cursor-ring {
-  opacity: 0.85;
-}
-
-/* 悬停到可点元素上时环收紧，给出"这里能点"的反馈 */
-body.el-cursor-on.el-cursor-hot #el-cursor-ring {
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
-  border-color: hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.95);
-  box-shadow: 0 0 16px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.6);
-}
-
-@media (hover: none), (pointer: coarse) {
-  #el-cursor-ring {
-    display: none;
-  }
-}
-
-/* 点击波纹。
-   .el-ripple-host 由 JS 在生成波纹前加在目标元素上 ——
-   不预先在 CSS 里给一堆元素加 position/overflow，
-   因为 overflow: hidden 可能裁掉导航下拉菜单这类溢出内容。 */
-.el-ripple-host {
-  position: relative;
-  overflow: hidden;
-}
-
+/* 点击波纹（Ripple） */
 .el-ripple-wave {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.75), hsla(var(--accent-hue), 100%, 81%, 0.28) 60%, transparent 72%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.75), hsla(var(--accent-hue), 40%, 82%, 0.28) 60%, transparent 72%);
   transform: scale(0);
   opacity: 0.9;
   pointer-events: none;
@@ -745,7 +692,7 @@ body.el-cursor-on.el-cursor-hot #el-cursor-ring {
 }
 
 [data-theme='dark'] .el-ripple-wave {
-  background: radial-gradient(circle, hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.7), hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.24) 60%, transparent 72%);
+  background: radial-gradient(circle, hsla(calc(var(--accent-hue) - 37), 40%, 78%, 0.7), hsla(calc(var(--accent-hue) - 37), 40%, 78%, 0.24) 60%, transparent 72%);
 }
 
 /* ==========================================================================
@@ -836,10 +783,6 @@ html.no-fx #aside-content .card-info .avatar-img::after {
   .el-ripple-wave,
   #rightside #go-up.is-at-top .el-ring {
     animation: none;
-  }
-
-  #el-cursor-ring {
-    display: none;
   }
 }
 
