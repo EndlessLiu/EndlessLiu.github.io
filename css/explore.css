@@ -1,0 +1,260 @@
+/* ==========================================================================
+   EndlessLoop · 主页 Explore · 探索区域
+   --------------------------------------------------------------------------
+   由 scripts/explore.js 注入到主页 #recent-posts 之前。
+   视觉沿用整站毛玻璃 + 乳白淡粉淡紫 + 柔和圆角 + 低饱和雾紫粉。
+   ========================================================================== */
+
+.el-explore {
+  max-width: 1080px;
+  margin: 6px auto 0;
+}
+
+/* -------------------------------------------------------------------------
+   标题区
+   ------------------------------------------------------------------------- */
+.el-explore__head {
+  text-align: center;
+  margin: 10px 0 24px;
+}
+
+.el-explore__en {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.el-explore__slogan {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  color: var(--el-text-mute);
+  letter-spacing: 0.02em;
+}
+
+/* -------------------------------------------------------------------------
+   小节标题（分类 / 热门标签）
+   ------------------------------------------------------------------------- */
+.el-explore__section {
+  margin-top: 26px;
+}
+
+.el-explore__sub {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--el-text);
+}
+
+.el-explore__sub-en {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--el-accent-ink);
+  opacity: 0.6;
+}
+
+/* -------------------------------------------------------------------------
+   分类卡片
+   ------------------------------------------------------------------------- */
+.el-explore__cats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: 16px;
+}
+
+.el-explore-cat {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: var(--el-radius-lg);
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(16px) saturate(170%);
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  box-shadow: var(--el-shadow-1), inset 0 1px 0 var(--el-liquid-inset);
+  overflow: hidden;
+  text-decoration: none;
+  transition: transform 0.35s var(--el-ease), box-shadow 0.35s var(--el-ease),
+    border-color 0.35s var(--el-ease);
+}
+
+/* 镜面高光 */
+.el-explore-cat::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--el-liquid-sheen);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.el-explore-cat > * {
+  position: relative;
+  z-index: 1;
+}
+
+.el-explore-cat__icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: hsla(var(--accent-hue), 100%, 81%, 0.14);
+  font-size: 1.5rem;
+  transition: transform 0.4s var(--el-ease-back);
+}
+
+.el-explore-cat__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.el-explore-cat__name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--el-text);
+}
+
+.el-explore-cat__count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--el-accent-ink);
+  opacity: 0.8;
+}
+
+.el-explore-cat__desc {
+  font-size: 0.8rem;
+  color: var(--el-text-mute);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 进入提示（hover 浮现） */
+.el-explore-cat__go {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  z-index: 1;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--el-accent-ink);
+  opacity: 0;
+  transform: translateX(6px);
+  transition: opacity 0.3s var(--el-ease), transform 0.3s var(--el-ease);
+}
+
+/* hover：轻微上浮 + 柔和光晕 + 图标动画 + 进入提示 */
+.el-explore-cat:hover {
+  transform: translateY(-4px);
+  border-color: rgba(216, 168, 192, 0.55);
+  box-shadow: var(--el-shadow-3), 0 0 26px rgba(197, 150, 173, 0.22);
+}
+
+.el-explore-cat:hover .el-explore-cat__icon {
+  transform: scale(1.16) rotate(-7deg);
+}
+
+.el-explore-cat:hover .el-explore-cat__go {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.el-explore-cat:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------
+   热门标签
+   ------------------------------------------------------------------------- */
+.el-explore__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.el-explore-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 999px;
+  background: var(--el-glass-bg-soft);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--el-text-soft);
+  text-decoration: none;
+  transition: transform 0.3s var(--el-ease), box-shadow 0.3s var(--el-ease),
+    border-color 0.3s var(--el-ease), color 0.3s var(--el-ease);
+}
+
+.el-explore-tag__name {
+  font-weight: 600;
+}
+
+.el-explore-tag__count {
+  font-size: 0.78em;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: hsla(var(--accent-hue), 100%, 81%, 0.16);
+  color: var(--el-accent-ink);
+}
+
+.el-explore-tag:hover {
+  transform: translateY(-2px) scale(1.04);
+  border-color: rgba(216, 168, 192, 0.55);
+  box-shadow: var(--el-shadow-2);
+  color: var(--el-accent-ink);
+}
+
+.el-explore-tag:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------------
+   响应式
+   ------------------------------------------------------------------------- */
+@media screen and (max-width: 768px) {
+  .el-explore__cats {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-explore-cat,
+  .el-explore-cat__icon,
+  .el-explore-cat__go,
+  .el-explore-tag {
+    transition: none;
+  }
+}
