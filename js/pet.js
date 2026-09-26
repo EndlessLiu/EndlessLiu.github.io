@@ -1,16 +1,15 @@
 /* ==========================================================================
-   EndlessLoop · 像素猫电子宠物（边上蹲着 / 说话互动）+ 电子木鱼点击特效
+   EndlessLoop · 像素猫电子宠物（边上蹲着 / 说话互动）+ 贴纸点击特效
    --------------------------------------------------------------------------
    像素猫：用经典 oneko 猫素材（公有领域），蹲在左下角：
      - 常驻 idle，偶尔自己「睡觉 / 挠痒」；
      - 时不时冒一句话（气泡）跟访客互动；
      - 点击小猫：警觉表情 + 回一句。
 
-   点击特效（电子木鱼）：点击页面任意处：
-     - 落点浮现一枚小木鱼（木色 + 开口）；
-     - 一圈金色波纹向外扩散；
-     - 「功德+1」金色小字向上飘散。
-     简洁、克制，不堆粒子、不游戏化。
+   点击特效（贴纸）：点击页面任意处：
+     - 落点弹出一枚 Hello Kitty 风格贴纸（scale 0.5→1.1→1 + 轻微旋转 + 淡出）；
+     - 同时浮现一个社会主义核心价值观词语（贴纸风格描边文字），向上漂浮淡出。
+     可爱、克制，不堆粒子、不游戏化。
 
    性能：一个 rAF 循环 + 短命 DOM 元素；
      reduced-motion / 省流 / 移动端下全部关闭。
@@ -165,7 +164,7 @@
   }
 
   /* ---------------------------------------------------------------------
-     赛博禅意点击特效
+     贴纸点击特效（Hello Kitty 风格贴纸 + 核心价值观文字）
      --------------------------------------------------------------------- */
 
   /* 文字反馈：社会主义核心价值观，每次随机、避免连续重复 */
@@ -188,8 +187,6 @@
   var isCoarse = window.matchMedia('(max-width: 768px)').matches;
   var lastFxAt = 0;
 
-  var DUST_COLORS = ['var(--el-violet)', 'var(--el-sky)', 'var(--el-sakura)', '#a98bff', '#7ec8ff'];
-
   function autoRemove(el) {
     el.addEventListener('animationend', function () {
       el.remove();
@@ -201,13 +198,13 @@
     document.addEventListener(
       'pointerdown',
       function (e) {
-        cyberZen(e.clientX, e.clientY);
+        stickerClick(e.clientX, e.clientY);
       },
       { passive: true }
     );
   }
 
-  function cyberZen(x, y) {
+  function stickerClick(x, y) {
     /* 移动端降频：两次特效之间至少间隔 350ms */
     if (isCoarse) {
       var now = Date.now();
@@ -215,46 +212,22 @@
       lastFxAt = now;
     }
 
-    /* 柔和光晕 */
-    var glow = document.createElement('span');
-    glow.className = 'el-zen-glow';
-    glow.style.left = x + 'px';
-    glow.style.top = y + 'px';
-    document.body.appendChild(glow);
-    autoRemove(glow);
+    /* 贴纸图案：点击处弹出（scale 0.5→1.1→1 + 轻微旋转 + 淡出） */
+    var sticker = document.createElement('img');
+    sticker.className = 'el-click-sticker';
+    sticker.src = '/img/click.png';
+    sticker.alt = '';
+    sticker.style.left = x + 'px';
+    sticker.style.top = y + 'px';
+    document.body.appendChild(sticker);
+    autoRemove(sticker);
 
-    /* 金色能量波纹（双层，第二圈延迟 90ms 造出层次） */
-    for (var i = 0; i < 2; i++) {
-      var ring = document.createElement('span');
-      ring.className = 'el-zen-ring';
-      ring.style.left = x + 'px';
-      ring.style.top = y + 'px';
-      ring.style.animationDelay = i * 90 + 'ms';
-      document.body.appendChild(ring);
-      autoRemove(ring);
-    }
-
-    /* 紫蓝星尘粒子 */
-    var n = 5 + ((Math.random() * 3) | 0);
-    for (var j = 0; j < n; j++) {
-      var d = document.createElement('span');
-      d.className = 'el-zen-dust';
-      d.style.color = DUST_COLORS[(Math.random() * DUST_COLORS.length) | 0];
-      d.style.left = x + 'px';
-      d.style.top = y + 'px';
-      d.style.setProperty('--dx', (Math.random() * 130 - 65).toFixed(0) + 'px');
-      d.style.setProperty('--dy', (-(Math.random() * 110 + 20)).toFixed(0) + 'px');
-      d.style.setProperty('--size', (2.5 + Math.random() * 4).toFixed(1) + 'px');
-      document.body.appendChild(d);
-      autoRemove(d);
-    }
-
-    /* 文字反馈 */
+    /* 核心价值观文字：贴纸风格，向上漂浮淡出 */
     var text = document.createElement('span');
-    text.className = 'el-zen-text';
+    text.className = 'el-click-text';
     text.textContent = pickFeedback();
     text.style.left = x + 'px';
-    text.style.top = y - 28 + 'px';
+    text.style.top = y - 34 + 'px';
     document.body.appendChild(text);
     autoRemove(text);
   }
