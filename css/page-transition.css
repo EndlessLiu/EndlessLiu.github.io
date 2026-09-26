@@ -1,0 +1,93 @@
+/* ==========================================================================
+   EndlessLoop · 页面切换转场
+   --------------------------------------------------------------------------
+   配合已开启的 pjax：page-transition.js 在 pjax:complete 时给 #content-inner
+   加 .el-page-enter，播放「淡入 + 上浮 + 微缩放 + 轻微模糊→清晰」；
+   再叠一层极淡光晕扫描。首页文章卡做轻 stagger（只做位移，透明度交给整体淡入）。
+   ========================================================================== */
+
+#content-inner.el-page-enter {
+  animation: el-page-in 0.5s var(--el-ease) both;
+}
+
+@keyframes el-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+/* 首页文章卡轻 stagger：只做位移，避免与整体淡入的透明度叠加 */
+.el-page-enter #recent-posts .recent-post-item {
+  animation: el-card-settle 0.4s var(--el-ease) both;
+}
+.el-page-enter #recent-posts .recent-post-item:nth-child(1) { animation-delay: 0.05s; }
+.el-page-enter #recent-posts .recent-post-item:nth-child(2) { animation-delay: 0.1s; }
+.el-page-enter #recent-posts .recent-post-item:nth-child(3) { animation-delay: 0.15s; }
+.el-page-enter #recent-posts .recent-post-item:nth-child(4) { animation-delay: 0.2s; }
+.el-page-enter #recent-posts .recent-post-item:nth-child(5) { animation-delay: 0.25s; }
+.el-page-enter #recent-posts .recent-post-item:nth-child(6) { animation-delay: 0.3s; }
+
+@keyframes el-card-settle {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* 光晕扫描：极淡、一次性，切页时从左侧扫过 */
+.el-page-sweep {
+  position: fixed;
+  top: 0;
+  left: -40%;
+  width: 40%;
+  height: 100%;
+  z-index: 998;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+  animation: el-page-sweep 0.7s var(--el-ease) forwards;
+}
+
+@keyframes el-page-sweep {
+  to {
+    transform: translateX(350%);
+  }
+}
+
+/* 移动端降低动画复杂度：只做纯淡入 */
+@media screen and (max-width: 768px) {
+  #content-inner.el-page-enter {
+    animation: el-page-in-mobile 0.4s var(--el-ease) both;
+  }
+  .el-page-enter #recent-posts .recent-post-item {
+    animation: none;
+  }
+  .el-page-sweep {
+    display: none;
+  }
+}
+
+@keyframes el-page-in-mobile {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #content-inner.el-page-enter,
+  .el-page-enter #recent-posts .recent-post-item,
+  .el-page-sweep {
+    animation: none;
+  }
+}

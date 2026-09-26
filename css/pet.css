@@ -227,7 +227,7 @@ body.el-cursor-on.el-cursor-hot #el-cursor-ring::before {
   pointer-events: none;
   color: rgba(205, 195, 255, 0.95);
   font-family: 'Space Grotesk', 'DM Sans', 'Microsoft YaHei', 'PingFang SC', sans-serif;
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: 0.04em;
   white-space: nowrap;

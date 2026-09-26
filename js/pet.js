@@ -168,15 +168,25 @@
      赛博禅意点击特效
      --------------------------------------------------------------------- */
 
-  /* 文字反馈：贴合个人成长 / 技术博客氛围 */
+  /* 文字反馈：社会主义核心价值观，每次随机、避免连续重复 */
   var FEEDBACK = [
-    'Knowledge +1',
-    'Insight +1',
-    'Experience +1',
-    '灵感 +1',
-    '专注 +1',
-    '认知 +1'
+    '富强', '民主', '文明', '和谐', '自由', '平等',
+    '公正', '法治', '爱国', '敬业', '诚信', '友善'
   ];
+
+  var lastFeedback = -1;
+  function pickFeedback() {
+    var i;
+    do {
+      i = Math.floor(Math.random() * FEEDBACK.length);
+    } while (i === lastFeedback && FEEDBACK.length > 1);
+    lastFeedback = i;
+    return FEEDBACK[i];
+  }
+
+  /* 移动端降低点击特效频率 */
+  var isCoarse = window.matchMedia('(max-width: 768px)').matches;
+  var lastFxAt = 0;
 
   var DUST_COLORS = ['var(--el-violet)', 'var(--el-sky)', 'var(--el-sakura)', '#a98bff', '#7ec8ff'];
 
@@ -198,6 +208,13 @@
   }
 
   function cyberZen(x, y) {
+    /* 移动端降频：两次特效之间至少间隔 350ms */
+    if (isCoarse) {
+      var now = Date.now();
+      if (now - lastFxAt < 350) return;
+      lastFxAt = now;
+    }
+
     /* 柔和光晕 */
     var glow = document.createElement('span');
     glow.className = 'el-zen-glow';
@@ -235,7 +252,7 @@
     /* 文字反馈 */
     var text = document.createElement('span');
     text.className = 'el-zen-text';
-    text.textContent = FEEDBACK[(Math.random() * FEEDBACK.length) | 0];
+    text.textContent = pickFeedback();
     text.style.left = x + 'px';
     text.style.top = y - 28 + 'px';
     document.body.appendChild(text);
