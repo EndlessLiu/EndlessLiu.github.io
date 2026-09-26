@@ -85,42 +85,8 @@
       bg.appendChild(beam);
     }
 
-    // 视差：仅桌面精确指针 + 允许动效
-    if (!allowMotion || !CAPS.finePointer) return;
-
-    var MAX = 12; // 位移上限（px），再大就会露白边
-    var targetX = 0;
-    var targetY = 0;
-    var curX = 0;
-    var curY = 0;
-    var raf = null;
-
-    function tick() {
-      curX += (targetX - curX) * 0.075;
-      curY += (targetY - curY) * 0.075;
-
-      var settled = Math.abs(targetX - curX) < 0.05 && Math.abs(targetY - curY) < 0.05;
-      if (settled) {
-        curX = targetX;
-        curY = targetY;
-      }
-
-      // 必须把 scale 一起写上：这个内联 transform 会整条覆盖 CSS 里的
-      // `#web_bg { transform: scale(1.05) }`，漏掉 scale 就会露出模糊白边。
-      bg.style.transform =
-        'scale(1.05) translate3d(' + curX.toFixed(2) + 'px,' + curY.toFixed(2) + 'px,0)';
-
-      raf = settled ? null : window.requestAnimationFrame(tick);
-    }
-
-    onPointer(function (e) {
-      var nx = (e.clientX / window.innerWidth - 0.5) * 2;
-      var ny = (e.clientY / window.innerHeight - 0.5) * 2;
-      // 取反：背景朝鼠标反方向移动，产生"内容浮在背景前面"的错觉
-      targetX = -nx * MAX;
-      targetY = -ny * MAX;
-      if (!raf) raf = window.requestAnimationFrame(tick);
-    });
+    // 背景不再做视差 / 放大 / 模糊（壁纸静止清晰），只保留上面的流光光束注入。
+    // onPointer 仍被 initCursorRing（光标环）使用，这里删除不影响它。
   }
 
   /* =====================================================================
