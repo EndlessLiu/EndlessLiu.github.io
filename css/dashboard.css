@@ -1,5 +1,5 @@
 /* ==========================================================================
-   EndlessLoop · 首页仪表盘（打卡热力图 + 倒计时 + 每日一言）
+   EndlessLoop · 首页仪表盘（打卡热力图 + 倒计时 + 我的日历）
    --------------------------------------------------------------------------
    结构由 source/js/dashboard.js 注入，依赖 custom.css 的玻璃拟态令牌。
    ========================================================================== */
@@ -126,6 +126,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -173,36 +174,321 @@
   color: var(--el-text-mute);
 }
 
-/* 每日一言 */
-.el-quote {
+/* 我的日历 */
+.el-calendar {
   display: flex;
   flex-direction: column;
-  justify-content: center;
 }
 
-.el-quote__label {
-  font-size: 0.9rem;
+.el-cal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.el-cal__title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--el-text);
+}
+
+.el-cal__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 50%;
+  background: var(--el-glass-bg-soft);
+  color: var(--el-text-soft);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.25s var(--el-ease-back), background 0.25s var(--el-ease),
+    color 0.25s var(--el-ease), box-shadow 0.25s var(--el-ease);
+}
+
+.el-cal__nav:hover {
+  background: var(--el-grad-main);
+  color: #fff;
+  transform: scale(1.08);
+  box-shadow: 0 6px 14px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35);
+}
+
+.el-cal__week,
+.el-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.el-cal__week {
+  margin-bottom: 6px;
+}
+
+.el-cal__week span {
+  text-align: center;
+  font-size: 11px;
   color: var(--el-text-mute);
 }
 
-.el-quote__text {
+.el-cal__day {
   position: relative;
-  margin: 14px 0 0;
-  padding-left: 18px;
-  font-size: 1.05rem;
-  line-height: 1.8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 38px;
+  padding: 4px 2px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s var(--el-ease), border-color 0.2s var(--el-ease),
+    transform 0.2s var(--el-ease-back), box-shadow 0.2s var(--el-ease);
+}
+
+.el-cal__day:hover {
+  background: hsla(var(--accent-hue), 100%, 81%, 0.12);
+  transform: translateY(-1px);
+}
+
+.el-cal__num {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
   color: var(--el-text-soft);
 }
 
-.el-quote__text::before {
-  content: '“';
-  position: absolute;
-  left: 0;
-  top: -6px;
-  font-size: 2rem;
+.el-cal__day--out {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.el-cal__day--out:hover {
+  background: transparent;
+  transform: none;
+}
+
+.el-cal__day--today .el-cal__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--el-grad-main);
+  color: #fff;
+  box-shadow: 0 0 10px hsla(var(--accent-hue), 100%, 81%, 0.55);
+}
+
+.el-cal__day--sel {
+  border-color: hsla(var(--accent-hue), 100%, 81%, 0.6);
+  background: hsla(var(--accent-hue), 100%, 81%, 0.14);
+  box-shadow: 0 0 12px hsla(var(--accent-hue), 100%, 81%, 0.22);
+}
+
+.el-cal__dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 6px;
+}
+
+.el-cal__dot {
+  display: block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.el-cal__dot--more {
+  width: auto;
+  height: auto;
+  background: none !important;
+  box-shadow: none !important;
+  font-style: normal;
+  font-size: 9px;
   line-height: 1;
+  color: var(--el-text-mute);
+}
+
+/* ---- 详情区 ---- */
+.el-cal__detail {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--el-hairline);
+  min-height: 118px;
+}
+
+.el-cal__detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.el-cal__detail-date {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.el-cal__detail-date b {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--el-text);
+}
+
+.el-cal__detail-date span {
+  font-size: 0.78rem;
+  color: var(--el-text-mute);
+}
+
+.el-cal__add {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 999px;
+  background: var(--el-glass-bg-soft);
   color: var(--el-sakura-deep);
-  opacity: 0.8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.25s var(--el-ease), color 0.25s var(--el-ease),
+    box-shadow 0.25s var(--el-ease), transform 0.25s var(--el-ease-back);
+}
+
+.el-cal__add:hover {
+  background: var(--el-grad-main);
+  color: #fff;
+  box-shadow: 0 6px 14px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35);
+  transform: translateY(-1px);
+}
+
+.el-cal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.el-cal__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: hsla(var(--accent-hue), 100%, 81%, 0.08);
+  transition: background 0.2s var(--el-ease);
+}
+
+.el-cal__item:hover {
+  background: hsla(var(--accent-hue), 100%, 81%, 0.14);
+}
+
+.el-cal__item-type {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  color: var(--el-text-soft);
+  white-space: nowrap;
+}
+
+.el-cal__item-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--el-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.el-cal__item-btn {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--el-text-mute);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s var(--el-ease), color 0.2s var(--el-ease);
+}
+
+.el-cal__item-btn:hover {
+  background: hsla(var(--accent-hue), 100%, 81%, 0.2);
+  color: var(--el-sakura-deep);
+}
+
+.el-cal__empty {
+  padding: 14px 0;
+  font-size: 0.82rem;
+  color: var(--el-text-mute);
+  text-align: center;
+}
+
+.el-cal__form {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.el-cal__type {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 8px;
+  background: var(--el-glass-bg-soft);
+  color: var(--el-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.el-cal__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 8px;
+  background: var(--el-glass-bg-soft);
+  color: var(--el-text);
+  font-size: 0.82rem;
+}
+
+.el-cal__text:focus {
+  outline: none;
+  border-color: hsla(var(--accent-hue), 100%, 81%, 0.6);
+}
+
+.el-cal__edit {
+  width: 100%;
+}
+
+.el-cal__submit {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--el-grad-main);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* ---- 响应式 ---- */
