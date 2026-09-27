@@ -42,7 +42,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 360px;
+  width: 280px;
   max-width: calc(100vw - 88px);
   padding: 10px 12px;
   box-sizing: border-box;
@@ -142,6 +142,12 @@ body.el-music-dragging {
 
 .el-music-mini.is-playing .el-music-mini__disc {
   animation-play-state: running;
+}
+
+/* 播放态：一圈淡紫柔光，让「正在播放」一眼可辨 */
+.el-music-mini.is-playing {
+  box-shadow: var(--el-shadow-3), 0 0 36px hsla(276, 60%, 80%, 0.38),
+    inset 0 1px 0 var(--el-liquid-inset);
 }
 
 /* 加载中快速转，暗示"正在准备" */
@@ -390,6 +396,12 @@ body.el-music-dragging {
   color: var(--el-sakura-deep);
 }
 
+/* 极简胶囊：上一首/下一首收进展开面板，桌面端默认不显示，只留播放键 + 展开键 */
+.el-music-mini__prev,
+.el-music-mini__next {
+  display: none;
+}
+
 /* 加载中：播放键呼吸提示 */
 .el-music-mini.is-loading .el-music-mini__play {
   animation: el-pulse-glow 1.2s ease-out infinite;
@@ -497,6 +509,9 @@ body.el-music-dragging .el-music-panel__close {
 }
 
 .el-music-panel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.6px;
@@ -504,6 +519,13 @@ body.el-music-dragging .el-music-panel__close {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* 标题前的弯月，月光电台的点睛之笔 */
+.el-music-panel__title::before {
+  content: '☾';
+  font-size: 15px;
+  -webkit-text-fill-color: var(--el-violet);
 }
 
 .el-music-panel__close {
@@ -826,36 +848,39 @@ body.el-music-open .el-music-player {
    ========================================================================== */
 
 @media screen and (max-width: 768px) {
+  /* 移动端：默认只留一枚小唱片，轻量、不挡正文 */
   .el-music-mini {
-    right: 62px;
-    bottom: 12px;
-    width: 340px;
-    max-width: calc(100vw - 78px);
-    gap: 8px;
-    padding: 9px 10px;
+    right: 14px;
+    bottom: 14px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    border-radius: 50%;
   }
 
   .el-music-mini__disc {
-    width: 46px;
-    height: 46px;
+    width: 44px;
+    height: 44px;
   }
 
-  /* 窄屏空间不够，上一首 / 下一首收起，跳过歌请展开完整面板操作 */
-  .el-music-mini__prev,
-  .el-music-mini__next {
+  /* 信息 / 进度 / 控制键全部收起，展开后在抽屉里操作 */
+  .el-music-mini__body,
+  .el-music-mini__controls {
     display: none;
   }
 
-  /* 左右同时定位：右侧避开 #rightside，左侧不越出屏幕。
-     注意这是"初始位置" —— 一旦用户拖动过，
-     JS 会写 inline 的 left/top/width 把它锁死（见 music.js 里的注释）。 */
+  /* 展开面板变底部抽屉 */
   .el-music-panel {
-    left: 12px;
-    right: 62px;
-    bottom: 86px;
+    left: 8px;
+    right: 8px;
+    bottom: 70px;
     width: auto;
     max-width: none;
-    max-height: 62vh;
+    max-height: 70vh;
+    border-radius: var(--el-radius-lg) var(--el-radius-lg) 0 0;
+    transform-origin: bottom center;
   }
 
   #el-music-player .aplayer-list ol {

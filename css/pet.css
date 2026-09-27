@@ -23,6 +23,18 @@
   pointer-events: none;
 }
 
+/* 宠物窝后的淡粉柔光 */
+.el-pet-rug::before {
+  content: '';
+  position: absolute;
+  inset: -22px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, hsla(340, 62%, 84%, 0.34), transparent 70%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+
 .el-pet-rug--left {
   left: -8px;
   bottom: 18px;

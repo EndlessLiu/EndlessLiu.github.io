@@ -69,6 +69,7 @@
 
   var STORE_PANEL = 'el-music-pos';
   var STORE_BTN = 'el-music-btn-pos';
+  var STORE_STATE = 'el-music-state';
   var DRAG_THRESHOLD = 5; // px：小于这个位移就当成点击，不是拖动
 
   /* ---------------------------------------------------------------------
@@ -94,6 +95,7 @@
   var player = null;
   var loadPromise = null;
   var open = false;
+  var unlocked = false; // 首次真正播放后才把「点击任意位置」提示换成歌手名
 
   function buildUI() {
     /* ---- 迷你卡片根。id 沿用 el-music-toggle：pjax 防重 + 位置记忆都靠它，
@@ -119,7 +121,7 @@
     // 信息（歌名 + 均衡器 / 歌手）+ 进度条 + 时间
     titleText = document.createElement('span');
     titleText.className = 'el-music-mini__title-text';
-    titleText.textContent = '音乐播放器';
+    titleText.textContent = 'Endless Radio';
 
     var eq = document.createElement('span');
     eq.className = 'el-music-mini__eq';
@@ -133,7 +135,7 @@
 
     artistEl = document.createElement('div');
     artistEl.className = 'el-music-mini__artist';
-    artistEl.textContent = '点击 ▶ 播放';
+    artistEl.textContent = '♫ 点击任意位置，开始你的旅程';
 
     barFill = document.createElement('div');
     barFill.className = 'el-music-mini__bar-fill';
@@ -184,7 +186,7 @@
 
     var title = document.createElement('span');
     title.className = 'el-music-panel__title';
-    title.textContent = '正在播放';
+    title.textContent = '月光电台 · Endless Radio';
 
     var closeBtn = document.createElement('button');
     closeBtn.type = 'button';
@@ -508,7 +510,8 @@
     var a = player.list.audios[player.list.index];
     if (!a) return;
     titleText.textContent = a.name || '未知曲目';
-    artistEl.textContent = a.artist || '未知艺术家';
+    // 解锁前保留「点击任意位置」提示，首次真正播放后才换成歌手名
+    if (unlocked) artistEl.textContent = a.artist || '未知艺术家';
     setCover(a.cover);
   }
 
@@ -545,16 +548,84 @@
 
   function bindPlayerEvents() {
     player.on('play', function () {
+      unlocked = true;
+      syncTrack(); // 首次播放才把提示换成歌手名
       toggle.classList.add('is-playing');
     });
     player.on('pause', function () {
       toggle.classList.remove('is-playing');
+      saveState();
     });
     player.on('ended', function () {
       toggle.classList.remove('is-playing');
+      saveState();
     });
-    player.on('listswitch', syncTrack);
-    player.on('timeupdate', updateProgress);
+    player.on('listswitch', function () {
+      syncTrack();
+      saveState();
+    });
+    player.on('timeupdate', function () {
+      updateProgress();
+      throttledSave();
+    });
+  }
+
+  /* ---------------------------------------------------------------------
+     播放状态持久化（当前歌曲 + 进度）
+     ---------------------------------------------------------------------
+     音量 / 循环 / 播放顺序已由 APlayer 的 storageName 持久化，这里只补
+     剩下两样：当前歌曲 index 与播放进度，刷新后恢复。
+     timeupdate 每秒会触发多次，做 5s 节流，避免高频写 localStorage。 */
+
+  function readState() {
+    try {
+      var raw = localStorage.getItem(STORE_STATE);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveState() {
+    if (!player || !player.list) return;
+    var s = {
+      index: player.list.index,
+      time: player.audio ? player.audio.currentTime || 0 : 0
+    };
+    try {
+      localStorage.setItem(STORE_STATE, JSON.stringify(s));
+    } catch (e) {
+      /* 隐私模式忽略 */
+    }
+  }
+
+  var lastSaveAt = 0;
+  function throttledSave() {
+    var now = Date.now();
+    if (now - lastSaveAt < 5000) return;
+    lastSaveAt = now;
+    saveState();
+  }
+
+  function restoreState() {
+    var s = readState();
+    if (!s || typeof s.index !== 'number') return;
+    // 先挂 seek 监听再 switch：switch 触发新歌加载，canplay 时 seek 到上次进度
+    if (s.time > 0) {
+      player.on('canplay', function once() {
+        player.off('canplay', once);
+        try {
+          player.seek(s.time);
+        } catch (e) {
+          /* 忽略 */
+        }
+      });
+    }
+    try {
+      if (s.index > 0) player.list.switch(s.index);
+    } catch (e) {
+      /* 忽略 */
+    }
   }
 
   /* ---------------------------------------------------------------------
@@ -663,6 +734,7 @@
 
         bindPlayerEvents();
         syncTrack();
+        restoreState();
         toggle.classList.add('is-ready');
         return player;
       })
@@ -686,29 +758,37 @@
      这里先尝试播放，若被拦（audio 仍暂停），等首次点击/按键后自动补播。 */
   function maybeAutoPlay() {
     if (!EL_MUSIC.autoPlay) return;
-    if (!document.querySelector('#page-header.full_page')) return; // 只在主页
 
-    loadPlayer()
-      .then(function (p) {
-        p.play();
+    /* 主页：沿用原逻辑，进入就尝试加载并播放（会被浏览器拦），再挂首次交互补播。 */
+    if (document.querySelector('#page-header.full_page')) {
+      loadPlayer()
+        .then(function (p) {
+          p.play();
+        })
+        .catch(function () {
+          /* 加载失败已在面板提示，这里静默 */
+        });
+    }
 
-        /* 首次交互兜底：自动播放被拦时，第一次点页面任意处就补播 */
-        document.addEventListener(
-          'pointerdown',
-          function start(e) {
-            // 点的是播放器本身时跳过（交给它自己的按钮，避免重复触发）
-            var onCard =
-              e.target && e.target.closest && e.target.closest('#el-music-toggle');
-            if (onCard) return;
-            if (p.audio && p.audio.paused) p.play();
-            document.removeEventListener('pointerdown', start);
-          },
-          { passive: true }
-        );
-      })
-      .catch(function () {
-        /* 加载失败已在面板提示，这里静默 */
-      });
+    /* 全站首次交互解锁：第一次点页面任意处（播放器本身除外）就加载并补播。
+       非主页保持懒加载 —— 没点之前不拉歌单、不建 Audio。 */
+    var unlock = function (e) {
+      var onPlayer =
+        e.target && e.target.closest &&
+        (e.target.closest('#el-music-toggle') || e.target.closest('#el-music-player'));
+      if (onPlayer) return;
+      document.removeEventListener('pointerdown', unlock);
+      document.removeEventListener('keydown', unlock);
+      loadPlayer()
+        .then(function (p) {
+          if (p.audio && p.audio.paused) p.play();
+        })
+        .catch(function () {
+          /* 静默 */
+        });
+    };
+    document.addEventListener('pointerdown', unlock, { passive: true });
+    document.addEventListener('keydown', unlock, { passive: true });
   }
 
   function boot() {

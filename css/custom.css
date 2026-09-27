@@ -33,7 +33,7 @@
      判定发生在"计算值期"而非"解析期"，结果是 unset —— **不会**回退到上一条声明。
      所以 JS 只负责覆写它的值、从不负责定义它：JS 挂了 / 被 CSP 拦了 / 用户禁了 JS，
      最坏也只是色相写死成默认值，而不是整站颜色崩成 unset。 */
-  --accent-hue: 286;
+  --accent-hue: 340;
 
   /* 主色板：全部从 --accent-hue 推导。
      四个色的色相偏移锁在一个 110° 的冷色弧里（紫 → 蓝紫 → 蓝 → 青）。
@@ -49,11 +49,11 @@
 
      用逗号语法的 hsl()/hsla()、不用空格语法：空格语法是 CSS Color 4 新增的，
      老浏览器不认识时整条声明会被丢弃（元素直接丢颜色，比"颜色不对"严重）。 */
-  --el-sakura: #d8a8c0;
-  --el-sakura-deep: #c596ad;
-  --el-violet: #a98bb5;
-  --el-sky: #a98bb5;
-  --el-mint: #b49bc0;
+  --el-sakura: #e6b0c8;
+  --el-sakura-deep: #cf92b0;
+  --el-violet: #b5a0d6;
+  --el-sky: #a0b8dc;
+  --el-mint: #a8ccd8;
 
   /* 「当作文字用的强调色」。上面四个令牌都是 L 72~81% 的亮色，
      当背景、描边、发光都很好，但当**文字**（小字号、浅底）对比度不够 ——
@@ -76,12 +76,12 @@
   );
 
   /* 玻璃拟态 */
-  --el-glass-bg: rgba(255, 245, 250, 0.16);
-  --el-glass-bg-soft: rgba(255, 245, 250, 0.1);
-  --el-glass-bg-strong: rgba(255, 245, 250, 0.22);
-  --el-glass-border: rgba(255, 255, 255, 0.18);
-  --el-glass-border-dim: rgba(255, 255, 255, 0.12);
-  --el-glass-blur: 12px;
+  --el-glass-bg: rgba(255, 255, 255, 0.55);
+  --el-glass-bg-soft: rgba(255, 255, 255, 0.42);
+  --el-glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --el-glass-border: rgba(255, 255, 255, 0.62);
+  --el-glass-border-dim: rgba(255, 255, 255, 0.34);
+  --el-glass-blur: 14px;
 
   /* 液态玻璃三件套（Apple Vision Pro 观感的三个来源）：
      sheen = 左上到右下的镜面高光渐变
@@ -108,7 +108,7 @@
   --el-shadow-1: 0 2px 10px hsla(var(--accent-hue), 25%, 25%, 0.05);
   --el-shadow-2: 0 8px 26px hsla(var(--accent-hue), 25%, 25%, 0.09);
   --el-shadow-3: 0 20px 46px hsla(var(--accent-hue), 25%, 25%, 0.15);
-  --el-shadow-glow: 0 14px 38px rgba(197, 150, 173, 0.28);
+  --el-shadow-glow: 0 16px 44px rgba(214, 147, 174, 0.30);
 
   /* 正文三档：同样染色相。原值 #1f2440 / #5a5f7d / #8b90a8 反解出来的色相都在 230 上下、
      饱和度 14~35% —— 本来就是"带偏的中性色"，只是偏的方向写死在蓝紫。
@@ -129,7 +129,7 @@
      这也是首页必须把壁纸撤掉的原因：图是没法用平涂色对齐的。
      alethein 的 --bg 就是这个角色（hsl(286 30% 97%)），这里沿用同一档亮度。
      ⚠️ 深色块里也定义了它，改这里要同步改那边。 */
-  --el-surface: #f7f3f9;
+  --el-surface: #faf6f0;
 
   --el-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --el-ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -386,16 +386,17 @@ body:has(#page-header.full_page) #web_bg {
   position: absolute;
   inset: -20%;
   pointer-events: none;
-  opacity: 0.75;
+  opacity: 0.72;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    radial-gradient(52% 46% at 50% 44%, hsla(214, 46%, 80%, 0.2), transparent 72%),
     radial-gradient(38% 44% at 18% 22%, hsla(var(--accent-hue), 40%, 82%, 0.5), transparent 68%),
     radial-gradient(34% 40% at 82% 18%, hsla(calc(var(--accent-hue) - 74), 40%, 76%, 0.45), transparent 66%),
     radial-gradient(42% 46% at 68% 84%, hsla(calc(var(--accent-hue) - 37), 40%, 78%, 0.45), transparent 70%),
     radial-gradient(30% 36% at 32% 88%, hsla(calc(var(--accent-hue) - 110), 36%, 70%, 0.34), transparent 68%);
-  background-size: 46px 46px, 46px 46px, auto, auto, auto, auto;
-  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+  background-size: 46px 46px, 46px 46px, auto, auto, auto, auto, auto;
+  background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
   /* 背景改为完全静止：极光的「放大 + 漂移」与网格平移动画都停掉，
      只保留静态的彩色光晕 + 科技网格（不再动）。 */
   animation: none;
