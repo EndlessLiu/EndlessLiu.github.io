@@ -105,10 +105,10 @@
   /* 阴影：也带色偏、不跟中性走。S/L 对齐原 rgba(38, 40, 74, *) 的观感，只把色相接过来。
      ⚠️ --el-shadow-glow 浅色在这里、深色在文件末尾的 [data-theme='dark'] 里**各写了一遍**，
      改一处必须同时改另一处，否则"深色下光晕还是老颜色"。 */
-  --el-shadow-1: 0 2px 10px hsla(var(--accent-hue), 25%, 25%, 0.05);
-  --el-shadow-2: 0 8px 26px hsla(var(--accent-hue), 25%, 25%, 0.09);
-  --el-shadow-3: 0 20px 46px hsla(var(--accent-hue), 25%, 25%, 0.15);
-  --el-shadow-glow: 0 16px 44px rgba(214, 147, 174, 0.30);
+  --el-shadow-1: 0 2px 12px hsla(282, 44%, 56%, 0.18);
+  --el-shadow-2: 0 8px 28px hsla(280, 46%, 54%, 0.24);
+  --el-shadow-3: 0 20px 48px hsla(276, 48%, 50%, 0.30);
+  --el-shadow-glow: 0 16px 44px hsla(306, 50%, 78%, 0.38);
 
   /* 正文三档：同样染色相。原值 #1f2440 / #5a5f7d / #8b90a8 反解出来的色相都在 230 上下、
      饱和度 14~35% —— 本来就是"带偏的中性色"，只是偏的方向写死在蓝紫。
@@ -129,7 +129,7 @@
      这也是首页必须把壁纸撤掉的原因：图是没法用平涂色对齐的。
      alethein 的 --bg 就是这个角色（hsl(286 30% 97%)），这里沿用同一档亮度。
      ⚠️ 深色块里也定义了它，改这里要同步改那边。 */
-  --el-surface: #faf6f0;
+  --el-surface: #f3edf7;
 
   --el-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --el-ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -384,22 +384,37 @@ body:has(#page-header.full_page) #web_bg {
 #web_bg::after {
   content: '';
   position: absolute;
-  inset: -20%;
+  inset: -25%;
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 0.95;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
-    radial-gradient(52% 46% at 50% 44%, hsla(214, 46%, 80%, 0.2), transparent 72%),
-    radial-gradient(38% 44% at 18% 22%, hsla(var(--accent-hue), 40%, 82%, 0.5), transparent 68%),
-    radial-gradient(34% 40% at 82% 18%, hsla(calc(var(--accent-hue) - 74), 40%, 76%, 0.45), transparent 66%),
-    radial-gradient(42% 46% at 68% 84%, hsla(calc(var(--accent-hue) - 37), 40%, 78%, 0.45), transparent 70%),
-    radial-gradient(30% 36% at 32% 88%, hsla(calc(var(--accent-hue) - 110), 36%, 70%, 0.34), transparent 68%);
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(58% 52% at 50% 46%, hsla(258, 28%, 96%, 0.9), transparent 74%),
+    radial-gradient(50% 52% at 12% 12%, hsla(344, 60%, 84%, 0.82), transparent 68%),
+    radial-gradient(48% 50% at 88% 14%, hsla(268, 52%, 82%, 0.78), transparent 68%),
+    radial-gradient(48% 50% at 90% 90%, hsla(304, 50%, 82%, 0.78), transparent 70%),
+    radial-gradient(46% 48% at 10% 90%, hsla(212, 50%, 80%, 0.72), transparent 68%);
   background-size: 46px 46px, 46px 46px, auto, auto, auto, auto, auto;
   background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
-  /* 背景改为完全静止：极光的「放大 + 漂移」与网格平移动画都停掉，
-     只保留静态的彩色光晕 + 科技网格（不再动）。 */
-  animation: none;
+  /* 非常缓慢地漂移 + 轻微缩放，营造「漂浮在梦幻雾气里」的空间纵深 */
+  animation: el-dream-drift 42s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes el-dream-drift {
+  from {
+    transform: translate3d(-2.5%, -1.5%, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(2.5%, 2%, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #web_bg::after {
+    animation: none;
+  }
 }
 
 /* 粒子画布：由 site-fx.js 注入 */
@@ -2369,7 +2384,7 @@ select:focus {
 }
 
 [data-theme='dark'] #web_bg::after {
-  opacity: 0.68;
+  opacity: 0.32;
 }
 
 [data-theme='dark'] #nav {
