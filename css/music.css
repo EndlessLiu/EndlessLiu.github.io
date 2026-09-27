@@ -35,7 +35,7 @@
 
 .el-music-mini {
   position: fixed;
-  right: 70px;
+  right: 92px;
   bottom: 18px;
   z-index: 90;
 
@@ -435,7 +435,7 @@ body.el-music-dragging {
 
 .el-music-panel {
   position: fixed;
-  right: 70px;
+  right: 92px;
   bottom: 108px; /* 卡片高约 72px、贴底 18px，这里留出 18px 的间距再起面板 */
   z-index: 91;
 

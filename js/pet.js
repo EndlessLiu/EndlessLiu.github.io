@@ -40,15 +40,7 @@
   ];
 
   function initPetCorner() {
-    if (!enabled || document.getElementById('el-pet-rug--left')) return;
-
-    ['left', 'right'].forEach(function (side) {
-      var rug = document.createElement('div');
-      rug.className = 'el-pet-rug el-pet-rug--' + side;
-      rug.id = 'el-pet-rug--' + side;
-      rug.setAttribute('aria-hidden', 'true');
-      document.body.appendChild(rug);
-    });
+    if (!enabled || document.querySelector('.el-pet')) return;
 
     var pets = [];
     PET_CONFIGS.forEach(function (cfg, i) {

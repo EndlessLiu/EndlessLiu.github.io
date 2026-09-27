@@ -10,45 +10,6 @@
    1. 宠物窝
    ------------------------------------------------------------------------- */
 
-/* 淡玻璃底座（左右各一块，云朵 / 小地毯感） */
-.el-pet-rug {
-  position: fixed;
-  z-index: 9992;
-  border: 1px solid var(--el-glass-border);
-  border-radius: 28px;
-  background: var(--el-glass-bg-soft);
-  backdrop-filter: blur(10px) saturate(160%);
-  -webkit-backdrop-filter: blur(10px) saturate(160%);
-  box-shadow: var(--el-shadow-2), inset 0 1px 0 var(--el-liquid-inset);
-  pointer-events: none;
-}
-
-/* 宠物窝后的淡粉柔光 */
-.el-pet-rug::before {
-  content: '';
-  position: absolute;
-  inset: -22px;
-  z-index: -1;
-  border-radius: 50%;
-  background: radial-gradient(circle, hsla(340, 62%, 84%, 0.34), transparent 70%);
-  filter: blur(12px);
-  pointer-events: none;
-}
-
-.el-pet-rug--left {
-  left: -8px;
-  bottom: 18px;
-  width: 205px;
-  height: 60px;
-}
-
-.el-pet-rug--right {
-  right: -8px;
-  bottom: 96px;
-  width: 220px;
-  height: 58px;
-}
-
 .el-pet {
   position: fixed;
   display: flex;
@@ -341,9 +302,9 @@
    ------------------------------------------------------------------------- */
 
 @media screen and (max-width: 768px) {
-  .el-pet-rug--left,
-  .el-pet-rug--right {
-    opacity: 0.6;
+  /* 移动端宠物稍微降低透明度，避免抢正文 */
+  .el-pet {
+    opacity: 0.92;
   }
 }
 

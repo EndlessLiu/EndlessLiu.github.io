@@ -68,6 +68,7 @@
   var TRIGGER_ID = 'el-dock-btn';
   var PALETTE_ID = 'el-palette';
   var PALETTE_CORE_ID = 'el-palette-core';
+  var TOP_ID = 'el-to-top';
 
   /* ---------------------------------------------------------------------
      小工具
@@ -256,24 +257,19 @@
   function injectTrigger() {
     if (document.getElementById(TRIGGER_ID)) return;
 
-    var host = document.getElementById('rightside-config-show');
-    if (!host) return; // 主题没渲染出 rightside（比如某些窄屏布局）就跳过
+    var nav = document.getElementById('nav');
+    if (!nav) return;
 
     var btn = document.createElement('button');
     btn.id = TRIGGER_ID;
     btn.type = 'button';
+    btn.className = 'el-nav-btn';
     btn.title = '外观设置';
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-controls', DOCK_ID);
     btn.innerHTML = '<i class="fas fa-sliders" aria-hidden="true"></i>';
 
-    // 插在齿轮和"回到顶部"之间，成为右上角按钮列的中间一项
-    var gear = document.getElementById('rightside-config');
-    if (gear && gear.parentNode === host && gear.nextSibling) {
-      host.insertBefore(btn, gear.nextSibling);
-    } else {
-      host.appendChild(btn);
-    }
+    nav.appendChild(btn);
   }
 
   function panelHTML() {
@@ -347,6 +343,9 @@
   function injectPalette() {
     if (document.getElementById(PALETTE_ID)) return;
 
+    var nav = document.getElementById('nav');
+    if (!nav) return;
+
     var wrap = document.createElement('div');
     wrap.id = PALETTE_ID;
     wrap.className = 'el-palette';
@@ -356,9 +355,7 @@
     menu.setAttribute('role', 'menu');
     menu.setAttribute('aria-label', '主题氛围');
 
-    var SPREAD = 90; // 0°（右）~ 90°（上），沿右上方向展开扇形
     MOODS.forEach(function (m, i) {
-      var angle = MOODS.length > 1 ? (SPREAD * i) / (MOODS.length - 1) : 0;
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'el-mood' + (m.dark ? ' el-mood--dark' : '');
@@ -366,12 +363,9 @@
       btn.setAttribute('aria-checked', 'false');
       btn.setAttribute('data-el-mood', m.dark ? 'dark' : String(m.h));
       btn.title = m.name + ' · ' + m.zh;
-      btn.style.setProperty('--angle', angle + 'deg');
       btn.style.setProperty('--i', String(i));
       if (!m.dark) btn.style.setProperty('--mood-h', String(m.h));
-      btn.innerHTML =
-        '<span class="el-mood__orb" aria-hidden="true"></span>' +
-        '<span class="el-mood__name">' + m.name + '</span>';
+      btn.innerHTML = '<span class="el-mood__orb" aria-hidden="true"></span>';
       menu.appendChild(btn);
     });
 
@@ -389,12 +383,43 @@
     tip.setAttribute('aria-hidden', 'true');
     tip.textContent = 'Dream Palette';
 
-    wrap.appendChild(menu);
     wrap.appendChild(core);
     wrap.appendChild(tip);
-    document.body.appendChild(wrap);
+    wrap.appendChild(menu);
+
+    // 插到日夜模式按钮前面：视觉控制区顺序 = Dream Palette → Theme Mode
+    var themeBtn = document.getElementById('el-nav-theme');
+    if (themeBtn && themeBtn.parentNode === nav) {
+      nav.insertBefore(wrap, themeBtn);
+    } else {
+      nav.appendChild(wrap);
+    }
 
     syncPaletteUI(currentHue(), currentThemeMode());
+  }
+
+  /* 右下角「回到顶部」玻璃按钮：滚动超过 300px 淡入，点击平滑滚回顶部 */
+  function injectToTop() {
+    if (document.getElementById(TOP_ID)) return;
+
+    var btn = document.createElement('button');
+    btn.id = TOP_ID;
+    btn.type = 'button';
+    btn.className = 'el-to-top';
+    btn.setAttribute('aria-label', '回到顶部');
+    btn.innerHTML = '<i class="fas fa-arrow-up" aria-hidden="true"></i>';
+    document.body.appendChild(btn);
+
+    var onScroll = function () {
+      var y = window.scrollY || document.documentElement.scrollTop || 0;
+      btn.classList.toggle('is-visible', y > 300);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    btn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   function paletteIsOpen() {
@@ -753,10 +778,11 @@
      --------------------------------------------------------------------- */
 
   function boot() {
+    initNavTheme();
+    injectPalette();
     injectTrigger();
     injectPanel();
-    injectPalette();
-    initNavTheme();
+    injectToTop();
 
     /* 重新落一次状态。pre-paint 的内联脚本正常情况下已经把色相和"跟随系统"
        处理过了，这里是为了兜住"内联脚本被 CSP 拦掉 / 被扩展干扰"的情况，

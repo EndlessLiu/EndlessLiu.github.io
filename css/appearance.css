@@ -470,44 +470,46 @@ html[data-fx-waves='off'] .el-hero-waves {
 }
 
 /* ==========================================================================
-   Dream Palette · 主题氛围悬浮控制器（圆形玻璃核心 + 扇形氛围菜单）
+   Dream Palette · 主题氛围控制器（导航栏圆形玻璃晶体 + 横向氛围菜单）
    --------------------------------------------------------------------------
-   默认：右下角一枚 56px 圆形玻璃核心（水晶球），内部是当前主题色渐变 + 光晕。
+   位置：顶部导航栏最右侧，紧邻日夜模式按钮（顺序 = Dream Palette → Theme Mode）。
+   默认：一枚 38px 圆形玻璃晶体，内部是当前主题色渐变 + 微光晕。
    悬停：轻微放大 + 发光 + 左侧 "Dream Palette" 提示。
-   点击：沿右上方向展开扇形菜单（6 个 mood 玻璃圆球，带缩放/旋转/淡入）。
-   位置：音乐胶囊正上方（bottom:96px），避免右下角两个组件互相抢视觉。
+   点击：在下方展开一个小型横向氛围菜单（6 个 mood 玻璃圆球，缩放/淡入）。
    ========================================================================== */
 
 .el-palette {
-  position: fixed;
-  right: 70px;
-  bottom: 96px;
-  z-index: 88;
-  width: 56px;
-  height: 56px;
+  position: absolute;
+  right: calc(var(--el-nav-cap-in) + 2.65rem);
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
+  width: 38px;
+  height: 38px;
 }
 
 .el-palette__core {
-  position: absolute;
-  inset: 0;
+  position: relative;
   z-index: 2;
+  width: 38px;
+  height: 38px;
   padding: 0;
   border: 1px solid var(--el-glass-border);
   border-radius: 50%;
   background: var(--el-glass-bg-strong);
-  backdrop-filter: blur(14px) saturate(170%);
-  -webkit-backdrop-filter: blur(14px) saturate(170%);
-  box-shadow: var(--el-shadow-2), 0 0 22px hsla(calc(var(--accent-hue) - 34), 50%, 78%, 0.28),
+  backdrop-filter: blur(12px) saturate(170%);
+  -webkit-backdrop-filter: blur(12px) saturate(170%);
+  box-shadow: var(--el-shadow-1), 0 0 16px hsla(calc(var(--accent-hue) - 34), 50%, 78%, 0.25),
     inset 0 1px 0 var(--el-liquid-inset);
   cursor: pointer;
-  transition: transform 0.4s var(--el-ease-back), box-shadow 0.4s var(--el-ease),
-    border-color 0.4s var(--el-ease);
+  transition: transform 0.35s var(--el-ease-back), box-shadow 0.35s var(--el-ease),
+    border-color 0.35s var(--el-ease);
 }
 
 .el-palette__core:hover {
-  transform: scale(1.1);
+  transform: scale(1.12);
   border-color: rgba(255, 255, 255, 0.9);
-  box-shadow: var(--el-shadow-3), 0 0 34px hsla(calc(var(--accent-hue) - 34), 60%, 80%, 0.5),
+  box-shadow: var(--el-shadow-2), 0 0 26px hsla(calc(var(--accent-hue) - 34), 60%, 80%, 0.5),
     inset 0 1px 0 var(--el-liquid-edge);
 }
 
@@ -518,7 +520,7 @@ html[data-fx-waves='off'] .el-hero-waves {
 
 .el-palette__ball {
   position: absolute;
-  inset: 8px;
+  inset: 7px;
   border-radius: 50%;
   background: conic-gradient(
     from 0deg,
@@ -528,8 +530,7 @@ html[data-fx-waves='off'] .el-hero-waves {
     hsl(calc(var(--accent-hue) - 110), 77%, 64%),
     hsl(var(--accent-hue), 100%, 81%)
   );
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6),
-    0 0 10px hsla(var(--accent-hue), 70%, 80%, 0.5);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6), 0 0 8px hsla(var(--accent-hue), 70%, 80%, 0.5);
   transition: transform 0.5s var(--el-ease);
 }
 
@@ -564,37 +565,57 @@ html[data-fx-waves='off'] .el-hero-waves {
   transform: translateY(-50%) translateX(0);
 }
 
-/* 扇形菜单：以核心圆心为原点的 0×0 容器 */
+/* 横向氛围菜单：核心正下方，6 个 mood 圆球一字排开 */
 .el-palette__menu {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
+  top: calc(100% + 14px);
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 999px;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  box-shadow: var(--el-shadow-2), inset 0 1px 0 var(--el-liquid-inset);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px) scale(0.92);
+  transform-origin: top right;
+  transition: opacity 0.28s var(--el-ease), transform 0.28s var(--el-ease),
+    visibility 0s linear 0.28s;
+}
+
+.el-palette.is-open .el-palette__menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition: opacity 0.28s var(--el-ease), transform 0.28s var(--el-ease),
+    visibility 0s;
 }
 
 .el-mood {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 30px;
   padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
   opacity: 0;
-  pointer-events: none;
-  transform: rotate(var(--angle)) translateX(0) rotate(calc(-1 * var(--angle))) scale(0.3);
-  transition: transform 0.45s var(--el-ease-back), opacity 0.3s var(--el-ease);
+  transform: translateY(-6px) scale(0.6);
+  transition: opacity 0.3s var(--el-ease), transform 0.3s var(--el-ease-back);
 }
 
 .el-palette.is-open .el-mood {
   opacity: 1;
-  pointer-events: auto;
-  transform: rotate(var(--angle)) translateX(72px) rotate(calc(-1 * var(--angle))) scale(1);
-  transition-delay: calc(var(--i, 0) * 35ms);
+  transform: none;
+  transition-delay: calc(var(--i, 0) * 25ms);
 }
 
 .el-mood__orb {
@@ -603,54 +624,34 @@ html[data-fx-waves='off'] .el-hero-waves {
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.7);
   background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85), hsl(var(--mood-h, 340), 52%, 80%) 55%);
-  box-shadow: 0 3px 10px hsla(var(--mood-h, 340), 50%, 55%, 0.4),
+  box-shadow: 0 2px 8px hsla(var(--mood-h, 340), 50%, 55%, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.7);
   transition: transform 0.3s var(--el-ease-back), box-shadow 0.3s var(--el-ease);
 }
 
 .el-mood:hover .el-mood__orb {
-  transform: scale(1.15);
-  box-shadow: 0 5px 16px hsla(var(--mood-h, 340), 60%, 60%, 0.55),
+  transform: scale(1.18);
+  box-shadow: 0 4px 14px hsla(var(--mood-h, 340), 60%, 60%, 0.55),
     inset 0 1px 1px rgba(255, 255, 255, 0.8);
 }
 
 .el-mood--dark .el-mood__orb {
   background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.2), #2a2230 55%);
   border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
 .el-mood--dark:hover .el-mood__orb {
-  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 .el-mood[aria-checked='true'] .el-mood__orb {
   box-shadow: 0 0 0 3px hsla(var(--mood-h, 340), 60%, 80%, 0.6),
-    0 3px 12px hsla(var(--mood-h, 340), 50%, 55%, 0.5);
+    0 3px 10px hsla(var(--mood-h, 340), 50%, 55%, 0.5);
 }
 
 .el-mood--dark[aria-checked='true'] .el-mood__orb {
-  box-shadow: 0 0 0 3px hsla(280, 40%, 60%, 0.55), 0 3px 12px rgba(0, 0, 0, 0.5);
-}
-
-.el-mood__name {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translate(-50%, 4px);
-  font-size: 9px;
-  letter-spacing: 0.3px;
-  color: var(--el-text-soft);
-  white-space: nowrap;
-  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.85);
-  opacity: 0;
-  transition: opacity 0.25s var(--el-ease), transform 0.25s var(--el-ease);
-}
-
-.el-mood:hover .el-mood__name,
-.el-mood[aria-checked='true'] .el-mood__name {
-  opacity: 1;
-  transform: translate(-50%, 0);
+  box-shadow: 0 0 0 3px hsla(280, 40%, 60%, 0.55), 0 3px 10px rgba(0, 0, 0, 0.5);
 }
 
 /* dock 里的说明文字 */
@@ -662,24 +663,70 @@ html[data-fx-waves='off'] .el-hero-waves {
   color: var(--el-text-mute);
 }
 
-/* 移动端：更小的核心 + 更紧凑的扇形 */
+/* 右下角「回到顶部」玻璃按钮 */
+.el-to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 87;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 50%;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  box-shadow: var(--el-shadow-2), inset 0 1px 0 var(--el-liquid-inset);
+  color: var(--el-violet);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity 0.35s var(--el-ease), transform 0.35s var(--el-ease),
+    box-shadow 0.35s var(--el-ease), color 0.35s var(--el-ease),
+    visibility 0s linear 0.35s;
+}
+
+.el-to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.35s var(--el-ease), transform 0.35s var(--el-ease),
+    box-shadow 0.35s var(--el-ease), color 0.35s var(--el-ease), visibility 0s;
+}
+
+.el-to-top:hover {
+  transform: translateY(-2px);
+  color: var(--el-sakura-deep);
+  box-shadow: var(--el-shadow-3), inset 0 1px 0 var(--el-liquid-edge);
+}
+
+.el-to-top:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+/* 隐藏 Butterfly 自带的 #rightside 按钮列（主题色已移到导航栏，返回顶部已自建） */
+#rightside {
+  display: none !important;
+}
+
+/* 外观设置按钮（dock 触发器）也定位在导航栏右侧，位于 Dream Palette 左侧 */
+#nav #el-dock-btn {
+  right: calc(var(--el-nav-cap-in) + 5.5rem);
+}
+
+/* 移动端 */
 @media screen and (max-width: 768px) {
-  .el-palette {
+  .el-palette__tip {
+    display: none;
+  }
+  .el-to-top {
     right: 14px;
     bottom: 70px;
-    width: 48px;
-    height: 48px;
-  }
-  .el-palette__ball {
-    inset: 7px;
-  }
-  .el-mood {
-    width: 30px;
-    height: 30px;
-    margin: -15px 0 0 -15px;
-  }
-  .el-palette.is-open .el-mood {
-    transform: rotate(var(--angle)) translateX(58px) rotate(calc(-1 * var(--angle))) scale(1);
+    width: 42px;
+    height: 42px;
   }
 }
 
@@ -687,5 +734,14 @@ html[data-fx-waves='off'] .el-hero-waves {
   .el-palette__ball,
   .el-mood {
     transition: none;
+  }
+}
+
+/* 窄屏（≤60rem）下导航栏按钮从绝对定位转为 flex item，Dream Palette 跟随 */
+@media screen and (max-width: 60rem) {
+  .el-palette {
+    position: static;
+    flex: 0 0 auto;
+    margin: 0 0 0 0.4rem;
   }
 }
