@@ -724,7 +724,7 @@ html[data-fx-waves='off'] .el-hero-waves {
   }
   .el-to-top {
     right: 14px;
-    bottom: 70px;
+    bottom: 80px; /* 抬到音乐控制栏（底 14px + 高 56px = 70px）之上，避免重叠 */
     width: 42px;
     height: 42px;
   }

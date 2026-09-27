@@ -1,9 +1,9 @@
 /* ==========================================================================
-   EndlessLoop · 右侧玻璃拟态迷你音乐卡片（可拖动 / 点击展开完整播放器）
+   EndlessLoop · 底部居中横向玻璃音乐控制栏（点击展开完整播放器）
    --------------------------------------------------------------------------
    形态：
-     右下角一张常驻的玻璃小卡片（旋转封面唱片 + 歌名/歌手 + 进度条 + 控制键）。
-     点卡片空白处（或右上「展开」键）滑出完整 APlayer 面板（歌单 + 歌词）。
+     屏幕底部正中央一张常驻的横向玻璃控制栏（封面唱片 + 歌名/歌手 + 进度条 + 控制键）。
+     点控制栏空白处（或「展开」键）滑出完整 APlayer 面板（歌单 + 歌词）。
      首屏不加载任何播放器资源 —— 第一次点「播放」才去拉 APlayer 与歌单。
 
    相比旧的圆形悬浮钮，升级点：
@@ -13,7 +13,7 @@
      - 进度条：实时播放进度 + 时间（读 APlayer 的 <audio> 的 currentTime/duration）
      - 动画：唱片自转、播放态均衡器跳动、玻璃高光、液态按压
 
-   卡片与面板都能拖着走，位置记在 localStorage，刷新后还在原处。
+   控制栏固定底部居中；展开面板仍可拖动，位置记在 localStorage，刷新后还在原处。
 
    歌单来自 Meting API（把网易云 / QQ 音乐等的歌单转成可播放列表）。
    换歌单：改下面 EL_MUSIC.id 即可；server / type 一般不用动。
@@ -68,7 +68,6 @@
   if (conn && conn.saveData) return; // 省流模式不打扰
 
   var STORE_PANEL = 'el-music-pos';
-  var STORE_BTN = 'el-music-btn-pos';
   var STORE_STATE = 'el-music-state';
   var DRAG_THRESHOLD = 5; // px：小于这个位移就当成点击，不是拖动
 
@@ -238,7 +237,6 @@
       if (btn) handleAction(btn.getAttribute('data-el-music'));
     });
 
-    makeDraggable(toggle, toggle, STORE_BTN, '.el-music-mini__controls');
     makeDraggable(head, panel, STORE_PANEL, '.el-music-panel__close');
   }
 
@@ -426,19 +424,15 @@
         }
       }
       pointerId = null;
-      checkDock();
     }
 
     handle.addEventListener('pointerup', end);
     handle.addEventListener('pointercancel', end);
   }
 
-  // 视口变化后原来的坐标可能跑到屏幕外，重新钳一下
+  // 视口变化后原来的坐标可能跑到屏幕外，重新钳一下（只剩展开面板可拖）
   function reclampAll() {
-    [
-      { el: toggle, key: STORE_BTN },
-      { el: panel, key: STORE_PANEL }
-    ].forEach(function (item) {
+    [{ el: panel, key: STORE_PANEL }].forEach(function (item) {
       var el = item.el;
       if (!el || !el.style.left) return;
       var rect = el.getBoundingClientRect();
@@ -448,14 +442,10 @@
       el.style.left = left + 'px';
       el.style.top = top + 'px';
     });
-    checkDock();
   }
 
   function restorePositions() {
-    [
-      { el: toggle, key: STORE_BTN },
-      { el: panel, key: STORE_PANEL }
-    ].forEach(function (item) {
+    [{ el: panel, key: STORE_PANEL }].forEach(function (item) {
       var raw;
       try {
         raw = localStorage.getItem(item.key);
@@ -488,16 +478,6 @@
       item.el.style.width = w + 'px';
       item.el.style.maxWidth = 'none';
     });
-    checkDock();
-  }
-
-  /* 靠边自动隐藏：卡片拖到屏幕左右边缘时淡出，悬停恢复 */
-  function checkDock() {
-    if (!toggle) return;
-    var rect = toggle.getBoundingClientRect();
-    var threshold = 24; // 距左右边缘 < 24px 算"靠边"
-    var docked = rect.left < threshold || window.innerWidth - rect.right < threshold;
-    toggle.classList.toggle('is-docked', docked);
   }
 
   /* ---------------------------------------------------------------------
@@ -795,7 +775,6 @@
     if (document.getElementById('el-music-toggle')) return; // pjax 重复挂载保护
     buildUI();
     restorePositions();
-    checkDock();
     window.addEventListener('resize', reclampAll, { passive: true });
     maybeAutoPlay();
   }

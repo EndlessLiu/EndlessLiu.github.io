@@ -25,54 +25,45 @@
    ========================================================================== */
 
 /* ==========================================================================
-   1. 迷你卡片
+   1. 迷你卡片 —— 底部居中横向控制栏
    --------------------------------------------------------------------------
-   位置说明：Live2D 看板娘已下架，右下角现在是这张常驻卡片。
-   右侧留出 70px 避开 Butterfly 的 #rightside 按钮列
-   （#rightside 显示时占据距右边缘 10px ~ 45px）。
-   拖动后位置由 JS 写 inline style 覆盖，这里的值是"初始位置"。
+   位置说明：Live2D 看板娘已下架，控制栏固定在整个屏幕底部正中央，
+   不再悬浮在文章内容区域、也不占右下角。
+   用 left:0 / right:0 / margin:0 auto 居中（不碰 transform，保留 hover 上浮），
+   右下角是自建的返回顶部 .el-to-top，控制栏居中也天然不会和它重叠。
    ========================================================================== */
 
 .el-music-mini {
   position: fixed;
-  right: 92px;
-  bottom: 18px;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  margin: 0 auto;
   z-index: 90;
 
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 280px;
-  max-width: calc(100vw - 88px);
-  padding: 10px 12px;
+  gap: 14px;
+  width: 460px;
+  /* 居中时右侧留足返回顶部按钮（right:24px + 46px 宽）的空间，避免靠拢 */
+  max-width: calc(100vw - 150px);
+  height: 68px;
+  padding: 10px 18px 10px 9px;
   box-sizing: border-box;
 
   border: 1px solid var(--el-glass-border);
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--el-glass-bg-strong);
   backdrop-filter: blur(18px) saturate(180%);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   /* 阴影 + 上沿内发光（液态玻璃的"厚度"） */
   box-shadow: var(--el-shadow-3), inset 0 1px 0 var(--el-liquid-inset);
 
-  cursor: grab;
-  /* 卡片可以拖。touch-action: none 是必须的 ——
-     不写的话触摸设备上浏览器会把这一划当成滚动页面，拖动会"断"。 */
-  touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 
   transition: transform 0.4s var(--el-ease), box-shadow 0.4s var(--el-ease),
     border-color 0.4s var(--el-ease), opacity 0.35s var(--el-ease);
-}
-
-/* 靠边自动隐藏：拖到屏幕左右边缘后淡出，悬停恢复 */
-.el-music-mini.is-docked {
-  opacity: 0.15;
-}
-
-.el-music-mini.is-docked:hover {
-  opacity: 1;
 }
 
 /* 镜面高光（左上到右下的液态玻璃 sheen） */
@@ -83,6 +74,19 @@
   z-index: 0;
   border-radius: inherit;
   background: var(--el-liquid-sheen);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* 顶部一条细渐变描边，二次元科技感的点睛之笔 */
+.el-music-mini::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--el-sakura-deep), transparent);
   opacity: 0.55;
   pointer-events: none;
 }
@@ -100,19 +104,9 @@
     inset 0 1px 0 var(--el-liquid-edge);
 }
 
-/* 拖动中：不要让 hover 的上浮跟着一起动，否则手感很飘 */
-.el-music-mini[data-dragging] {
-  transform: none;
-  cursor: grabbing;
-}
-
-/* 全局拖动态：光标变抓紧 + 禁用文本选中 */
-body.el-music-dragging,
-body.el-music-dragging .el-music-mini {
-  cursor: grabbing;
-}
-
+/* 全局拖动态（展开面板拖动时）：光标变抓紧 + 禁用文本选中 */
 body.el-music-dragging {
+  cursor: grabbing;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -121,8 +115,8 @@ body.el-music-dragging {
 .el-music-mini__disc {
   position: relative;
   flex: 0 0 auto;
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   /* 渐变描边环：用 conic 渐变做底，中间被 inner 盖住只露出 3px 边，
      和侧栏头像那圈光环同一套四色（紫 → 蓝紫 → 蓝 → 青）。 */
@@ -396,10 +390,10 @@ body.el-music-dragging {
   color: var(--el-sakura-deep);
 }
 
-/* 极简胶囊：上一首/下一首收进展开面板，桌面端默认不显示，只留播放键 + 展开键 */
+/* 上一首 / 下一首：横向控制栏够宽，桌面端常驻显示 */
 .el-music-mini__prev,
 .el-music-mini__next {
-  display: none;
+  display: flex;
 }
 
 /* 加载中：播放键呼吸提示 */
@@ -435,12 +429,14 @@ body.el-music-dragging {
 
 .el-music-panel {
   position: fixed;
-  right: 92px;
-  bottom: 108px; /* 卡片高约 72px、贴底 18px，这里留出 18px 的间距再起面板 */
+  left: 0;
+  right: 0;
+  bottom: 110px; /* 控制栏顶约 96px，这里留 14px 间距再起面板 */
+  margin: 0 auto;
   z-index: 91;
 
   width: 360px;
-  max-width: calc(100vw - 88px);
+  max-width: calc(100vw - 32px);
   max-height: calc(100vh - 140px);
   overflow: hidden;
 
@@ -454,7 +450,7 @@ body.el-music-dragging {
   opacity: 0;
   visibility: hidden;
   transform: translateY(16px) scale(0.97);
-  transform-origin: bottom right;
+  transform-origin: bottom center;
   transition: opacity 0.34s var(--el-ease), transform 0.34s var(--el-ease),
     visibility 0s linear 0.34s;
 }
@@ -848,34 +844,44 @@ body.el-music-open .el-music-player {
    ========================================================================== */
 
 @media screen and (max-width: 768px) {
-  /* 移动端：默认只留一枚小唱片，轻量、不挡正文 */
+  /* 移动端：横向控制栏自动缩窄、降低高度，仍居中贴底 */
   .el-music-mini {
-    right: 14px;
     bottom: 14px;
-    width: 48px;
-    height: 48px;
-    padding: 0;
-    gap: 0;
-    justify-content: center;
-    border-radius: 50%;
+    width: calc(100% - 28px);
+    max-width: 460px;
+    height: 56px;
+    gap: 10px;
+    padding: 7px 14px 7px 7px;
+    border-radius: 18px;
   }
 
   .el-music-mini__disc {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
   }
 
-  /* 信息 / 进度 / 控制键全部收起，展开后在抽屉里操作 */
-  .el-music-mini__body,
-  .el-music-mini__controls {
+  /* 上一首 / 下一首在窄屏收起，只留播放键 + 展开键 */
+  .el-music-mini__prev,
+  .el-music-mini__next {
     display: none;
   }
 
-  /* 展开面板变底部抽屉 */
+  /* 时间文本太占地方，移动端藏掉，进度条保留 */
+  .el-music-mini__time {
+    display: none;
+  }
+
+  /* 播放键略缩小 */
+  .el-music-mini__play {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* 展开面板变底部抽屉，提到控制栏（底 14px + 高 56px = 70px）之上 */
   .el-music-panel {
     left: 8px;
     right: 8px;
-    bottom: 70px;
+    bottom: 82px;
     width: auto;
     max-width: none;
     max-height: 70vh;
