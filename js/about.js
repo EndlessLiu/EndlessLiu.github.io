@@ -72,6 +72,51 @@
     window.setInterval(tick, 1000);
   }
 
+  /* 此刻的我 · 悬挂语录：随机展示一句，点击 / 回车切换下一句 */
+  function initNowMe() {
+    var el = document.getElementById('el-now-me');
+    if (!el || el.dataset.bound === '1') return;
+    el.dataset.bound = '1';
+
+    var quotes = [
+      '幸福就像是隐藏在电影里的彩蛋',
+      '零碎的岛屿终会找到海',
+      '慢慢来，比较快',
+      '跑起来，风就有了形状',
+      '代码和人生，都在不断重构',
+      '保持热爱，保持好奇',
+      '认真生活的人，运气不会太差',
+      '二次元是我的第二故乡'
+    ];
+    var quoteEl = el.querySelector('.el-now-me__quote');
+    if (!quoteEl) return;
+
+    var idx = Math.floor(Math.random() * quotes.length);
+
+    function show(i) {
+      idx = i;
+      quoteEl.textContent = quotes[i];
+    }
+
+    function next() {
+      var n;
+      do {
+        n = Math.floor(Math.random() * quotes.length);
+      } while (quotes.length > 1 && n === idx);
+      show(n);
+    }
+
+    show(idx);
+
+    el.addEventListener('click', next);
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        next();
+      }
+    });
+  }
+
   function boot() {
     if (!document.querySelector('.el-mbti, .el-site')) return;
 
@@ -93,6 +138,7 @@
     }
 
     initUptime();
+    initNowMe();
   }
 
   if (document.readyState === 'loading') {

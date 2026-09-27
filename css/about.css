@@ -12,6 +12,7 @@
    ========================================================================== */
 
 .el-about {
+  position: relative;
   max-width: 1080px;
   margin: 0 auto;
   display: grid;
@@ -706,6 +707,186 @@
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: var(--el-accent-ink);
+}
+
+/* ==========================================================================
+   10. 此刻的我 · 悬挂语录挂件（头像卡片左侧的装饰彩蛋）
+   ========================================================================== */
+
+.el-now-me {
+  position: absolute;
+  top: 0;
+  right: 100%;        /* 挂在 .el-about 左侧（头像卡片那一侧） */
+  margin-right: 24px;
+  z-index: 5;
+  width: 150px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 挂点：墙上的小圆钉 */
+.el-now-me__pin {
+  display: block;
+  width: 10px;
+  height: 10px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, hsl(calc(var(--accent-hue) - 37), 72%, 72%));
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* 吊绳 + 吊牌一起绕挂点摆动 */
+.el-now-me__swing {
+  display: block;
+  transform-origin: 50% 0;
+  animation: el-nowme-sway 6.5s ease-in-out infinite;
+}
+
+/* 细吊绳 */
+.el-now-me__rope {
+  display: block;
+  width: 2px;
+  height: 16px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, hsla(calc(var(--accent-hue) - 37), 70%, 72%, 0.95), hsla(calc(var(--accent-hue) - 37), 70%, 82%, 0.5));
+}
+
+/* 吊牌主体：半透明磨砂玻璃 + 紫蓝渐变 + 柔光 */
+.el-now-me__card {
+  position: relative;
+  display: block;
+  padding: 13px 14px 11px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 14px;
+  background: linear-gradient(160deg, hsla(calc(var(--accent-hue) - 20), 72%, 88%, 0.72), hsla(calc(var(--accent-hue) - 62), 80%, 80%, 0.6));
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  box-shadow: var(--el-shadow-2), 0 0 22px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.32),
+    inset 0 1px 0 var(--el-liquid-inset);
+  transition: box-shadow 0.4s var(--el-ease), filter 0.4s var(--el-ease);
+}
+
+/* 镜面高光 */
+.el-now-me__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--el-liquid-sheen);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.el-now-me__card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.el-now-me__title {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  background: var(--el-grad-main);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.el-now-me__quote {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--el-text);
+  word-break: break-word;
+}
+
+.el-now-me__sign {
+  display: block;
+  margin-top: 7px;
+  font-size: 11px;
+  text-align: right;
+  color: var(--el-text-mute);
+}
+
+/* 悬停：摆动增强 + 柔光增强，移开平滑恢复 */
+.el-now-me:hover .el-now-me__swing {
+  animation-name: el-nowme-sway-strong;
+  animation-duration: 3.2s;
+}
+
+.el-now-me:hover .el-now-me__card {
+  box-shadow: var(--el-shadow-3), 0 0 34px hsla(var(--accent-hue), 100%, 81%, 0.55),
+    inset 0 1px 0 var(--el-liquid-edge);
+  filter: brightness(1.03);
+}
+
+.el-now-me:focus-visible {
+  outline: none;
+}
+
+.el-now-me:focus-visible .el-now-me__card {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+@keyframes el-nowme-sway {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(1.8deg);
+  }
+  75% {
+    transform: rotate(-1.8deg);
+  }
+}
+
+@keyframes el-nowme-sway-strong {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(3.4deg);
+  }
+  75% {
+    transform: rotate(-3.4deg);
+  }
+}
+
+/* 深色模式：紫蓝渐变换深一点的底色，避免泛白 */
+[data-theme='dark'] .el-now-me__card {
+  background: linear-gradient(160deg, hsla(calc(var(--accent-hue) - 20), 55%, 34%, 0.8), hsla(calc(var(--accent-hue) - 62), 58%, 40%, 0.72));
+}
+
+/* 窄桌面 / 平板：左侧留白不足，挂件移到右上角悬挂 */
+@media screen and (max-width: 1399px) {
+  .el-now-me {
+    top: -6px;
+    right: 22px;
+    margin-right: 0;
+    width: 126px;
+  }
+}
+
+/* 移动端：再缩小一点 */
+@media screen and (max-width: 900px) {
+  .el-now-me {
+    right: 14px;
+    width: 112px;
+  }
+}
+
+/* 减少动效：关掉摆动 */
+@media (prefers-reduced-motion: reduce) {
+  .el-now-me__swing {
+    animation: none;
+  }
 }
 
 /* ==========================================================================
