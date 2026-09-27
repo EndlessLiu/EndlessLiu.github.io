@@ -26,6 +26,14 @@
    1. 设计令牌
    ========================================================================== */
 
+/* 把 --accent-hue 注册成可插值的 <number>，让主题切换能平滑过渡而不是瞬间跳色。
+   不支持 @property 的浏览器会退化成「直接跳色」，不会崩。 */
+@property --accent-hue {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 340;
+}
+
 :root {
   /* 主色相：整站唯一的颜色输入。拖动它，全站跟着换色。
      ⚠️ 必须定义在这里（:root），不能只靠 JS 挂到 <html> 上。
@@ -34,6 +42,8 @@
      所以 JS 只负责覆写它的值、从不负责定义它：JS 挂了 / 被 CSP 拦了 / 用户禁了 JS，
      最坏也只是色相写死成默认值，而不是整站颜色崩成 unset。 */
   --accent-hue: 340;
+  /* 主题色相变化时平滑插值（配合上面的 @property 使用，0.8s） */
+  transition: --accent-hue 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* 主色板：全部从 --accent-hue 推导。
      四个色的色相偏移锁在一个 110° 的冷色弧里（紫 → 蓝紫 → 蓝 → 青）。
@@ -49,11 +59,11 @@
 
      用逗号语法的 hsl()/hsla()、不用空格语法：空格语法是 CSS Color 4 新增的，
      老浏览器不认识时整条声明会被丢弃（元素直接丢颜色，比"颜色不对"严重）。 */
-  --el-sakura: #e6b0c8;
-  --el-sakura-deep: #cf92b0;
-  --el-violet: #b5a0d6;
-  --el-sky: #a0b8dc;
-  --el-mint: #a8ccd8;
+  --el-sakura: hsl(var(--accent-hue), 50%, 80%);
+  --el-sakura-deep: hsl(var(--accent-hue), 42%, 68%);
+  --el-violet: hsl(calc(var(--accent-hue) - 37), 41%, 73%);
+  --el-sky: hsl(calc(var(--accent-hue) - 74), 46%, 75%);
+  --el-mint: hsl(calc(var(--accent-hue) - 110), 38%, 75%);
 
   /* 「当作文字用的强调色」。上面四个令牌都是 L 72~81% 的亮色，
      当背景、描边、发光都很好，但当**文字**（小字号、浅底）对比度不够 ——
@@ -105,10 +115,10 @@
   /* 阴影：也带色偏、不跟中性走。S/L 对齐原 rgba(38, 40, 74, *) 的观感，只把色相接过来。
      ⚠️ --el-shadow-glow 浅色在这里、深色在文件末尾的 [data-theme='dark'] 里**各写了一遍**，
      改一处必须同时改另一处，否则"深色下光晕还是老颜色"。 */
-  --el-shadow-1: 0 2px 12px hsla(282, 44%, 56%, 0.18);
-  --el-shadow-2: 0 8px 28px hsla(280, 46%, 54%, 0.24);
-  --el-shadow-3: 0 20px 48px hsla(276, 48%, 50%, 0.30);
-  --el-shadow-glow: 0 16px 44px hsla(306, 50%, 78%, 0.38);
+  --el-shadow-1: 0 2px 12px hsla(calc(var(--accent-hue) - 58), 44%, 56%, 0.18);
+  --el-shadow-2: 0 8px 28px hsla(calc(var(--accent-hue) - 60), 46%, 54%, 0.24);
+  --el-shadow-3: 0 20px 48px hsla(calc(var(--accent-hue) - 64), 48%, 50%, 0.30);
+  --el-shadow-glow: 0 16px 44px hsla(calc(var(--accent-hue) - 34), 50%, 78%, 0.38);
 
   /* 正文三档：同样染色相。原值 #1f2440 / #5a5f7d / #8b90a8 反解出来的色相都在 230 上下、
      饱和度 14~35% —— 本来就是"带偏的中性色"，只是偏的方向写死在蓝紫。
@@ -390,11 +400,11 @@ body:has(#page-header.full_page) #web_bg {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    radial-gradient(58% 52% at 50% 46%, hsla(258, 28%, 96%, 0.9), transparent 74%),
-    radial-gradient(50% 52% at 12% 12%, hsla(344, 60%, 84%, 0.82), transparent 68%),
-    radial-gradient(48% 50% at 88% 14%, hsla(268, 52%, 82%, 0.78), transparent 68%),
-    radial-gradient(48% 50% at 90% 90%, hsla(304, 50%, 82%, 0.78), transparent 70%),
-    radial-gradient(46% 48% at 10% 90%, hsla(212, 50%, 80%, 0.72), transparent 68%);
+    radial-gradient(58% 52% at 50% 46%, hsla(calc(var(--accent-hue) - 82), 28%, 96%, 0.9), transparent 74%),
+    radial-gradient(50% 52% at 12% 12%, hsla(calc(var(--accent-hue) + 4), 60%, 84%, 0.82), transparent 68%),
+    radial-gradient(48% 50% at 88% 14%, hsla(calc(var(--accent-hue) - 72), 52%, 82%, 0.78), transparent 68%),
+    radial-gradient(48% 50% at 90% 90%, hsla(calc(var(--accent-hue) - 36), 50%, 82%, 0.78), transparent 70%),
+    radial-gradient(46% 48% at 10% 90%, hsla(calc(var(--accent-hue) - 128), 50%, 80%, 0.72), transparent 68%);
   background-size: 46px 46px, 46px 46px, auto, auto, auto, auto, auto;
   background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
   /* 非常缓慢地漂移 + 轻微缩放，营造「漂浮在梦幻雾气里」的空间纵深 */

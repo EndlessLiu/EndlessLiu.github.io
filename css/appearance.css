@@ -468,3 +468,224 @@ html[data-fx-waves='off'] .el-hero-waves {
     border-radius: var(--el-radius-lg);
   }
 }
+
+/* ==========================================================================
+   Dream Palette · 主题氛围悬浮控制器（圆形玻璃核心 + 扇形氛围菜单）
+   --------------------------------------------------------------------------
+   默认：右下角一枚 56px 圆形玻璃核心（水晶球），内部是当前主题色渐变 + 光晕。
+   悬停：轻微放大 + 发光 + 左侧 "Dream Palette" 提示。
+   点击：沿右上方向展开扇形菜单（6 个 mood 玻璃圆球，带缩放/旋转/淡入）。
+   位置：音乐胶囊正上方（bottom:96px），避免右下角两个组件互相抢视觉。
+   ========================================================================== */
+
+.el-palette {
+  position: fixed;
+  right: 70px;
+  bottom: 96px;
+  z-index: 88;
+  width: 56px;
+  height: 56px;
+}
+
+.el-palette__core {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 0;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 50%;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(14px) saturate(170%);
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  box-shadow: var(--el-shadow-2), 0 0 22px hsla(calc(var(--accent-hue) - 34), 50%, 78%, 0.28),
+    inset 0 1px 0 var(--el-liquid-inset);
+  cursor: pointer;
+  transition: transform 0.4s var(--el-ease-back), box-shadow 0.4s var(--el-ease),
+    border-color 0.4s var(--el-ease);
+}
+
+.el-palette__core:hover {
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--el-shadow-3), 0 0 34px hsla(calc(var(--accent-hue) - 34), 60%, 80%, 0.5),
+    inset 0 1px 0 var(--el-liquid-edge);
+}
+
+.el-palette__core:focus-visible {
+  outline: 2px solid hsl(var(--accent-hue), 72%, 46%);
+  outline-offset: 2px;
+}
+
+.el-palette__ball {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    hsl(var(--accent-hue), 100%, 81%),
+    hsl(calc(var(--accent-hue) - 37), 92%, 76%),
+    hsl(calc(var(--accent-hue) - 74), 100%, 72%),
+    hsl(calc(var(--accent-hue) - 110), 77%, 64%),
+    hsl(var(--accent-hue), 100%, 81%)
+  );
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6),
+    0 0 10px hsla(var(--accent-hue), 70%, 80%, 0.5);
+  transition: transform 0.5s var(--el-ease);
+}
+
+.el-palette.is-open .el-palette__ball {
+  transform: rotate(120deg);
+}
+
+.el-palette__tip {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 10px);
+  transform: translateY(-50%) translateX(6px);
+  padding: 5px 11px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 999px;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: var(--el-shadow-1);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--el-text-soft);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--el-ease), transform 0.3s var(--el-ease);
+}
+
+.el-palette__core:hover ~ .el-palette__tip,
+.el-palette__core:focus-visible ~ .el-palette__tip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* 扇形菜单：以核心圆心为原点的 0×0 容器 */
+.el-palette__menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+.el-mood {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: rotate(var(--angle)) translateX(0) rotate(calc(-1 * var(--angle))) scale(0.3);
+  transition: transform 0.45s var(--el-ease-back), opacity 0.3s var(--el-ease);
+}
+
+.el-palette.is-open .el-mood {
+  opacity: 1;
+  pointer-events: auto;
+  transform: rotate(var(--angle)) translateX(72px) rotate(calc(-1 * var(--angle))) scale(1);
+  transition-delay: calc(var(--i, 0) * 35ms);
+}
+
+.el-mood__orb {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85), hsl(var(--mood-h, 340), 52%, 80%) 55%);
+  box-shadow: 0 3px 10px hsla(var(--mood-h, 340), 50%, 55%, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7);
+  transition: transform 0.3s var(--el-ease-back), box-shadow 0.3s var(--el-ease);
+}
+
+.el-mood:hover .el-mood__orb {
+  transform: scale(1.15);
+  box-shadow: 0 5px 16px hsla(var(--mood-h, 340), 60%, 60%, 0.55),
+    inset 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.el-mood--dark .el-mood__orb {
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.2), #2a2230 55%);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.el-mood--dark:hover .el-mood__orb {
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+.el-mood[aria-checked='true'] .el-mood__orb {
+  box-shadow: 0 0 0 3px hsla(var(--mood-h, 340), 60%, 80%, 0.6),
+    0 3px 12px hsla(var(--mood-h, 340), 50%, 55%, 0.5);
+}
+
+.el-mood--dark[aria-checked='true'] .el-mood__orb {
+  box-shadow: 0 0 0 3px hsla(280, 40%, 60%, 0.55), 0 3px 12px rgba(0, 0, 0, 0.5);
+}
+
+.el-mood__name {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 4px);
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  color: var(--el-text-soft);
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.85);
+  opacity: 0;
+  transition: opacity 0.25s var(--el-ease), transform 0.25s var(--el-ease);
+}
+
+.el-mood:hover .el-mood__name,
+.el-mood[aria-checked='true'] .el-mood__name {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* dock 里的说明文字 */
+.el-dock__note {
+  margin: 0;
+  padding: 4px 2px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--el-text-mute);
+}
+
+/* 移动端：更小的核心 + 更紧凑的扇形 */
+@media screen and (max-width: 768px) {
+  .el-palette {
+    right: 14px;
+    bottom: 70px;
+    width: 48px;
+    height: 48px;
+  }
+  .el-palette__ball {
+    inset: 7px;
+  }
+  .el-mood {
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+  }
+  .el-palette.is-open .el-mood {
+    transform: rotate(var(--angle)) translateX(58px) rotate(calc(-1 * var(--angle))) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .el-palette__ball,
+  .el-mood {
+    transition: none;
+  }
+}

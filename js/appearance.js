@@ -54,17 +54,20 @@
   /* 预设色板。第一项就是默认值，和 custom.css 的 :root 保持一致。
      为什么固定这几个：默认紫、原来的品牌粉、以及蓝紫/天蓝/青绿/暖橙四个方向，
      覆盖冷暖两端，拖起来能立刻看出"色相弧"是怎么跟着走的。 */
-  var PRESETS = [
-    { h: 340, name: '奶油粉' },
-    { h: 336, name: '樱粉' },
-    { h: 255, name: '蓝紫' },
-    { h: 203, name: '天蓝' },
-    { h: 171, name: '青绿' },
-    { h: 25, name: '暖橙' }
+  /* 主题氛围（Dream Palette 的六个 mood）：h = 色相；dark = Midnight 深色档。 */
+  var MOODS = [
+    { h: 340, name: 'Sakura', zh: '樱粉' },
+    { h: 272, name: 'Lavender', zh: '薰衣草' },
+    { h: 212, name: 'Mist Blue', zh: '雾蓝' },
+    { h: 160, name: 'Mint', zh: '薄荷' },
+    { h: 28, name: 'Sunset', zh: '晚霞' },
+    { h: 0, name: 'Midnight', zh: '午夜', dark: true }
   ];
 
   var DOCK_ID = 'el-dock';
   var TRIGGER_ID = 'el-dock-btn';
+  var PALETTE_ID = 'el-palette';
+  var PALETTE_CORE_ID = 'el-palette-core';
 
   /* ---------------------------------------------------------------------
      小工具
@@ -191,6 +194,7 @@
     }
 
     syncModeUI(mode);
+    syncPaletteUI(currentHue(), mode);
   }
 
   /* 读当前模式。**先看主题的键** —— 顺序不能反：
@@ -261,7 +265,7 @@
     btn.title = '外观设置';
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-controls', DOCK_ID);
-    btn.innerHTML = '<i class="fas fa-palette" aria-hidden="true"></i>';
+    btn.innerHTML = '<i class="fas fa-sliders" aria-hidden="true"></i>';
 
     // 插在齿轮和"回到顶部"之间，成为右上角按钮列的中间一项
     var gear = document.getElementById('rightside-config');
@@ -273,22 +277,6 @@
   }
 
   function panelHTML() {
-    var swatches = PRESETS.map(function (p) {
-      return (
-        '<button class="el-swatch" type="button" data-el-hue="' +
-        p.h +
-        '" style="--el-swatch-h: ' +
-        p.h +
-        '" title="' +
-        p.name +
-        '" aria-pressed="false" aria-label="色相 ' +
-        p.h +
-        '（' +
-        p.name +
-        '）"></button>'
-      );
-    }).join('');
-
     return (
       '<div class="el-dock__head">' +
       '<span class="el-dock__title">外观</span>' +
@@ -297,23 +285,7 @@
       '<i class="fas fa-xmark" aria-hidden="true"></i></button>' +
       '</div>' +
 
-      '<section class="el-set">' +
-      '<label class="el-set__label" for="el-hue-input">主题色相</label>' +
-      '<div class="el-hue__top">' +
-      '<input class="el-hue__input" id="el-hue-input" type="range" min="0" max="360" step="1" value="' +
-      DEFAULT_HUE +
-      '">' +
-      '<output class="el-hue__out" for="el-hue-input" id="el-hue-out">' +
-      DEFAULT_HUE +
-      '°</output>' +
-      '</div>' +
-      '<div class="el-hue__bottom">' +
-      '<div class="el-swatches">' +
-      swatches +
-      '</div>' +
-      '<button class="el-reset" type="button" data-el-reset>恢复默认</button>' +
-      '</div>' +
-      '</section>' +
+      '<p class="el-dock__note">主题氛围请用右下角的 Dream Palette 控制器选择。</p>' +
 
       '<section class="el-set">' +
       '<span class="el-set__label">显示模式</span>' +
@@ -366,6 +338,100 @@
        那一列上有 transform（包含块）和 opacity（backdrop root），
        挂进去会导致面板被推出屏幕、玻璃失效。详见 appearance.css 头部注释。 */
     document.body.appendChild(panel);
+  }
+
+  /* ---------------------------------------------------------------------
+     Dream Palette · 主题氛围悬浮控制器（圆形玻璃核心 + 扇形氛围菜单）
+     --------------------------------------------------------------------- */
+
+  function injectPalette() {
+    if (document.getElementById(PALETTE_ID)) return;
+
+    var wrap = document.createElement('div');
+    wrap.id = PALETTE_ID;
+    wrap.className = 'el-palette';
+
+    var menu = document.createElement('div');
+    menu.className = 'el-palette__menu';
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', '主题氛围');
+
+    var SPREAD = 90; // 0°（右）~ 90°（上），沿右上方向展开扇形
+    MOODS.forEach(function (m, i) {
+      var angle = MOODS.length > 1 ? (SPREAD * i) / (MOODS.length - 1) : 0;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'el-mood' + (m.dark ? ' el-mood--dark' : '');
+      btn.setAttribute('role', 'menuitemradio');
+      btn.setAttribute('aria-checked', 'false');
+      btn.setAttribute('data-el-mood', m.dark ? 'dark' : String(m.h));
+      btn.title = m.name + ' · ' + m.zh;
+      btn.style.setProperty('--angle', angle + 'deg');
+      btn.style.setProperty('--i', String(i));
+      if (!m.dark) btn.style.setProperty('--mood-h', String(m.h));
+      btn.innerHTML =
+        '<span class="el-mood__orb" aria-hidden="true"></span>' +
+        '<span class="el-mood__name">' + m.name + '</span>';
+      menu.appendChild(btn);
+    });
+
+    var core = document.createElement('button');
+    core.id = PALETTE_CORE_ID;
+    core.type = 'button';
+    core.className = 'el-palette__core';
+    core.setAttribute('aria-expanded', 'false');
+    core.setAttribute('aria-haspopup', 'true');
+    core.setAttribute('aria-label', 'Dream Palette · 主题氛围');
+    core.innerHTML = '<span class="el-palette__ball" aria-hidden="true"></span>';
+
+    var tip = document.createElement('span');
+    tip.className = 'el-palette__tip';
+    tip.setAttribute('aria-hidden', 'true');
+    tip.textContent = 'Dream Palette';
+
+    wrap.appendChild(menu);
+    wrap.appendChild(core);
+    wrap.appendChild(tip);
+    document.body.appendChild(wrap);
+
+    syncPaletteUI(currentHue(), currentThemeMode());
+  }
+
+  function paletteIsOpen() {
+    var p = document.getElementById(PALETTE_ID);
+    return !!p && p.classList.contains('is-open');
+  }
+
+  function openPalette() {
+    var p = document.getElementById(PALETTE_ID);
+    var core = document.getElementById(PALETTE_CORE_ID);
+    if (!p) return;
+    syncPaletteUI(currentHue(), currentThemeMode());
+    p.classList.add('is-open');
+    if (core) core.setAttribute('aria-expanded', 'true');
+  }
+
+  function closePalette() {
+    var p = document.getElementById(PALETTE_ID);
+    var core = document.getElementById(PALETTE_CORE_ID);
+    if (p) p.classList.remove('is-open');
+    if (core) core.setAttribute('aria-expanded', 'false');
+  }
+
+  function togglePalette() {
+    if (paletteIsOpen()) closePalette();
+    else openPalette();
+  }
+
+  function syncPaletteUI(hue, mode) {
+    var orbs = document.querySelectorAll('.el-mood');
+    var isDark = mode === 'dark';
+
+    for (var i = 0; i < orbs.length; i++) {
+      var v = orbs[i].getAttribute('data-el-mood');
+      var on = v === 'dark' ? isDark : parseInt(v, 10) === hue;
+      orbs[i].setAttribute('aria-checked', on ? 'true' : 'false');
+    }
   }
 
   /* ---------------------------------------------------------------------
@@ -435,17 +501,7 @@
      --------------------------------------------------------------------- */
 
   function syncHueUI(h) {
-    var input = document.getElementById('el-hue-input');
-    var out = document.getElementById('el-hue-out');
-
-    if (input && input.value !== String(h)) input.value = String(h);
-    if (out) out.textContent = h + '°';
-
-    var swatches = document.querySelectorAll('.el-swatch');
-    for (var i = 0; i < swatches.length; i++) {
-      var on = parseInt(swatches[i].getAttribute('data-el-hue'), 10) === h;
-      swatches[i].setAttribute('aria-pressed', on ? 'true' : 'false');
-    }
+    syncPaletteUI(h, currentThemeMode());
   }
 
   function syncModeUI(mode) {
@@ -562,21 +618,28 @@
       return;
     }
 
+    if (t.closest('#' + PALETTE_CORE_ID)) {
+      togglePalette();
+      return;
+    }
+
+    var mood = t.closest('[data-el-mood]');
+    if (mood) {
+      var v = mood.getAttribute('data-el-mood');
+      if (v === 'dark') {
+        applyThemeMode('dark');
+      } else {
+        applyThemeMode('light');
+        applyHue(parseInt(v, 10), true);
+      }
+      closePalette();
+      return;
+    }
+
     if (t.closest('[data-el-close]')) {
       closePanel();
       var btn = document.getElementById(TRIGGER_ID);
       if (btn) btn.focus();
-      return;
-    }
-
-    var swatch = t.closest('[data-el-hue]');
-    if (swatch) {
-      applyHue(parseInt(swatch.getAttribute('data-el-hue'), 10), true);
-      return;
-    }
-
-    if (t.closest('[data-el-reset]')) {
-      applyHue(DEFAULT_HUE, true);
       return;
     }
 
@@ -592,16 +655,12 @@
       return;
     }
 
-    /* 点面板外面关掉。这条必须放在最后 —— 前面的分支都要先有机会命中。 */
+    /* 点外面关掉两个浮层。这条必须放在最后 —— 前面的分支都要先有机会命中。 */
+    if (paletteIsOpen() && !t.closest('#' + PALETTE_ID)) closePalette();
     if (panelIsOpen() && !t.closest('#' + DOCK_ID)) closePanel();
   });
 
-  // range 用 input 事件（拖动过程中连续触发），才能实时预览
-  document.addEventListener('input', function (e) {
-    var t = e.target;
-    if (!t || !t.matches || !t.matches('#el-hue-input')) return;
-    applyHue(parseInt(t.value, 10), true);
-  });
+  // 色相滑杆已由 Dream Palette 取代，不再有 range 输入
 
   /* kind → 处理函数的映射。写成表而不是 if/else 链：加第三项（波浪）时
      漏写一个分支的表现是"开关能拨、页面没反应"，这种 bug 不会报错、
@@ -621,10 +680,18 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && panelIsOpen()) {
-      closePanel();
-      var btn = document.getElementById(TRIGGER_ID);
-      if (btn) btn.focus();
+    if (e.key === 'Escape') {
+      if (paletteIsOpen()) {
+        closePalette();
+        var core = document.getElementById(PALETTE_CORE_ID);
+        if (core) core.focus();
+        return;
+      }
+      if (panelIsOpen()) {
+        closePanel();
+        var btn = document.getElementById(TRIGGER_ID);
+        if (btn) btn.focus();
+      }
     }
   });
 
@@ -688,6 +755,7 @@
   function boot() {
     injectTrigger();
     injectPanel();
+    injectPalette();
     initNavTheme();
 
     /* 重新落一次状态。pre-paint 的内联脚本正常情况下已经把色相和"跟随系统"
