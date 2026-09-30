@@ -1,29 +1,19 @@
 /* ==========================================================================
-   EndlessLoop · 首页仪表盘（打卡热力图 + 倒计时 + 我的日历）
+   EndlessLoop · 首页 Hero 仪表盘（个人资料卡 + 贪吃蛇热力图 + 倒计时 + 日历）
    --------------------------------------------------------------------------
    结构由 source/js/dashboard.js 注入，依赖 custom.css 的玻璃拟态令牌。
+
+   目录：
+     1. 容器
+     2. Hero（左个人资料卡 + 右热力图）
+     3. 个人资料卡
+     4. 贪吃蛇热力图
+     5. 倒计时 + 日历（沿用旧版）
+     6. 响应式与性能降级
    ========================================================================== */
 
 .el-dashboard {
   margin-bottom: 24px;
-}
-
-.el-dashboard__head {
-  margin-bottom: 18px;
-}
-
-.el-dashboard__title {
-  margin: 0;
-  font-family: 'Space Grotesk', 'DM Sans', 'Microsoft YaHei', 'PingFang SC', sans-serif;
-  font-size: 1.45rem;
-  font-weight: 700;
-  color: var(--el-text);
-}
-
-.el-dashboard__sub {
-  margin: 4px 0 0;
-  font-size: 0.9rem;
-  color: var(--el-text-mute);
 }
 
 /* ---- 通用卡片 ---- */
@@ -39,38 +29,442 @@
   overflow: hidden;
 }
 
-/* ---- 热力图 ---- */
+/* ==========================================================================
+   2. Hero：左个人资料卡 + 右贪吃蛇热力图
+   --------------------------------------------------------------------------
+   align-items: stretch 让两卡等高（对齐要求「高度基本一致」）。
+   左侧资料卡固定比例，右侧热力图吃掉剩余宽度；热力图内部自带横向滚动，
+   页面本身绝不出现横向溢出。
+   ========================================================================== */
+
+.el-dashboard__hero {
+  display: grid;
+  grid-template-columns: minmax(236px, 288px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+/* ==========================================================================
+   3. 个人资料卡
+   ========================================================================== */
+
+.el-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.el-profile__avatar {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  /* 粉紫渐变描边环：conic 渐变做底，中间被 img 盖住只露出 4px 边 */
+  background: conic-gradient(
+    from 0deg,
+    hsl(var(--accent-hue), 100%, 81%),
+    hsl(calc(var(--accent-hue) - 37), 92%, 76%),
+    hsl(calc(var(--accent-hue) - 74), 100%, 72%),
+    hsl(calc(var(--accent-hue) - 110), 77%, 64%),
+    hsl(var(--accent-hue), 100%, 81%)
+  );
+  box-shadow: 0 10px 30px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.38);
+}
+
+/* 缓慢自转的柔光，让头像"发亮" */
+.el-profile__avatar::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 60%,
+    hsla(var(--accent-hue), 100%, 81%, 0.5) 80%,
+    transparent 100%
+  );
+  filter: blur(6px);
+  z-index: -1;
+  animation: el-avatar-halo 7s linear infinite;
+}
+
+.el-profile__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--el-glass-bg-strong);
+  /* 极淡的呼吸效果 */
+  animation: el-avatar-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes el-avatar-halo {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes el-avatar-breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsla(var(--accent-hue), 100%, 81%, 0.25);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 22px 4px hsla(var(--accent-hue), 100%, 81%, 0.32);
+  }
+}
+
+.el-profile__name {
+  margin-top: 16px;
+  font-family: 'Space Grotesk', 'DM Sans', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--el-text);
+}
+
+.el-profile__bio {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  line-height: 1.8;
+  letter-spacing: 0.2px;
+  color: var(--el-text-soft);
+}
+
+.el-profile__stats {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 18px;
+}
+
+.el-profile__stat {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: var(--el-radius-md);
+  background: var(--el-glass-bg-soft);
+  transition: transform 0.35s var(--el-ease-back), background 0.35s var(--el-ease),
+    color 0.35s var(--el-ease), border-color 0.35s var(--el-ease);
+}
+
+.el-profile__stat:hover {
+  transform: translateY(-3px);
+  border-color: transparent;
+  background: var(--el-grad-main);
+  color: #fff;
+}
+
+.el-profile__stat-num {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--el-text);
+}
+
+.el-profile__stat:hover .el-profile__stat-num {
+  color: #fff;
+}
+
+.el-profile__stat-label {
+  font-size: 0.74rem;
+  opacity: 0.72;
+}
+
+/* 社交图标：克隆自侧栏，这里用自己的作用域重新画一遍圆形玻璃钮 */
+.el-profile__social {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.el-profile__social .social-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 50%;
+  background: var(--el-glass-bg-soft);
+  box-shadow: inset 0 1px 0 var(--el-liquid-inset);
+  transition: transform 0.35s var(--el-ease-back), background 0.35s var(--el-ease),
+    box-shadow 0.35s var(--el-ease);
+}
+
+.el-profile__social .social-icon:hover {
+  transform: translateY(-4px) scale(1.08);
+  background: var(--el-glass-bg-strong);
+  box-shadow: inset 0 1px 0 var(--el-liquid-edge), 0 10px 22px hsla(calc(var(--accent-hue) - 37), 92%, 76%, 0.35);
+}
+
+.el-profile__social .social-icon i {
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+/* 主题会给社交图标加 hover 旋转，圆形按钮上会晃，关掉只保留上浮 */
+.el-profile__social .social-icon i:hover {
+  transform: none;
+}
+
+/* 深色下统计项 hover：底色是 accent 渐变，文字要压成深色才读得出 */
+[data-theme='dark'] .el-profile__stat:hover .el-profile__stat-num {
+  color: hsl(calc(var(--accent-hue) - 37), 26%, 14%);
+}
+
+/* ==========================================================================
+   4. 贪吃蛇打卡热力图
+   ========================================================================== */
+
 .el-dashboard__heatmap {
-  overflow-x: auto; /* 窄屏时热力图可横向滚动，不被裁切 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* 与资料卡等高时，内容垂直居中，避免底部空一块 */
+  overflow-x: hidden; /* 横向滚动交给 .el-snake__scroll，卡片本身不滚 */
 }
 
-.hmap {
-  position: relative;
+/* ---- 头部：标题 + 右上角月份 ---- */
+.el-snake__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
-.hmap__months {
+.el-snake__titles {
+  min-width: 0;
+}
+
+.el-dashboard__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: 'Space Grotesk', 'DM Sans', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--el-text);
+}
+
+.el-snake__mascot {
+  font-size: 1.05em;
+  line-height: 1;
+  filter: drop-shadow(0 0 5px hsla(var(--accent-hue), 100%, 74%, 0.6));
+}
+
+.el-dashboard__sub {
+  margin: 5px 0 0;
+  font-size: 0.85rem;
+  color: var(--el-text-mute);
+}
+
+.el-snake__month {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 999px;
+  background: var(--el-glass-bg-soft);
+  color: var(--el-sakura-deep);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---- 蛇形看板（内部横向滚动，页面不溢出）---- */
+.el-snake__scroll {
+  --snake-cell: 12px;
+  --snake-gap: 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  /* 让看板内出现细滚动条时也不突兀 */
+  scrollbar-width: thin;
+  scrollbar-color: hsla(var(--accent-hue), 100%, 74%, 0.35) transparent;
+}
+
+.el-snake__scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.el-snake__scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: hsla(var(--accent-hue), 100%, 74%, 0.35);
+}
+
+.el-snake__scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 宽度取 max-content、不加 min-width：让看板恰好框住蛇形路径，
+   月份标签用百分比对齐网格时才不会错位（卡片比蛇宽时也不至于标签漂移）。 */
+.el-snake__inner {
   position: relative;
-  height: 16px;
-  margin-bottom: 6px;
+  width: max-content;
+  padding: 12px 14px;
+  border: 1px solid var(--el-glass-border-dim);
+  border-radius: var(--el-radius-md);
+  background: hsla(var(--accent-hue), 60%, 92%, 0.28);
+  /* 微弱的游戏地图底色 */
+}
+
+[data-theme='dark'] .el-snake__inner {
+  background: hsla(var(--accent-hue), 40%, 20%, 0.25);
+}
+
+.el-snake__months {
+  position: relative;
+  height: 15px;
+  margin-bottom: 7px;
   font-size: 11px;
   color: var(--el-text-mute);
 }
 
-.hmap__months span {
+.el-snake__months span {
   position: absolute;
   transform: translateX(-50%);
+  white-space: nowrap;
 }
 
-.hmap__grid {
+.el-snake__grid {
   display: grid;
   grid-auto-flow: column;
-  grid-template-rows: repeat(7, 11px);
-  grid-auto-columns: 11px;
-  gap: 3px;
+  grid-template-rows: repeat(7, var(--snake-cell, 12px));
+  grid-auto-columns: var(--snake-cell, 12px);
+  gap: var(--snake-gap, 3px);
   width: max-content;
 }
 
-.hmap__cell {
+/* ---- 蛇身小方块 ---- */
+.el-snake-cell {
+  display: block;
+  position: relative;
+  width: var(--snake-cell, 12px);
+  height: var(--snake-cell, 12px);
+  border-radius: 4px;
+  background: var(--el-hairline);
+  line-height: 0;
+}
+
+.el-snake-cell:hover {
+  transform: scale(1.4);
+  z-index: 3;
+}
+
+/* 活跃格（蛇身）依次出现。
+   fill 用 backwards 而非 both：延迟期保持 from（透明），动画结束后交还 transform，
+   否则 both 会把 transform 锁在 scale(1)，hover 放大永远失效。 */
+.el-snake-cell.is-on {
+  animation: el-snake-in 0.5s var(--el-ease) backwards;
+}
+
+@keyframes el-snake-in {
+  from { opacity: 0; transform: scale(0.35); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* 活跃等级颜色：浅粉 → 粉 → 玫红 → 紫粉（图例共用同一套） */
+.el-snake-cell.lv1,
+.el-snake-swatch.lv1 {
+  background: hsla(var(--accent-hue), 100%, 84%, 0.42);
+}
+
+.el-snake-cell.lv2,
+.el-snake-swatch.lv2 {
+  background: hsla(var(--accent-hue), 100%, 78%, 0.62);
+}
+
+.el-snake-cell.lv3,
+.el-snake-swatch.lv3 {
+  background: hsla(var(--accent-hue), 96%, 72%, 0.85);
+}
+
+.el-snake-cell.lv4,
+.el-snake-swatch.lv4 {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--accent-hue), 94%, 72%),
+    hsl(calc(var(--accent-hue) - 25), 82%, 64%)
+  );
+  box-shadow: 0 0 8px hsla(var(--accent-hue), 100%, 74%, 0.55);
+}
+
+/* ---- 蛇头 ---- */
+.el-snake-cell.is-head {
+  z-index: 2;
+}
+
+.el-snake-head {
+  position: absolute;
+  inset: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px hsla(var(--accent-hue), 100%, 74%, 0.9));
+  animation: el-snake-nudge 2.6s ease-in-out infinite;
+}
+
+@keyframes el-snake-nudge {
+  0%, 100% { transform: translate(0, 0); }
+  30%      { transform: translate(0, -1px) rotate(-4deg); }
+  60%      { transform: translate(0, 0) rotate(4deg); }
+}
+
+/* ---- 食物（未打卡空格上的小果子）---- */
+.el-snake-cell.is-food {
+  background: var(--el-hairline);
+}
+
+.el-snake-food {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6));
+}
+
+/* ---- 底部：图例 + 统计 ---- */
+.el-snake__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--el-text-mute);
+}
+
+.el-snake__legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.el-snake__legend-label {
+  margin: 0 2px;
+}
+
+.el-snake-swatch {
   display: block;
   width: 11px;
   height: 11px;
@@ -78,40 +472,47 @@
   background: var(--el-hairline);
 }
 
-.hmap-l1 {
-  background: hsla(var(--accent-hue), 100%, 81%, 0.28);
-}
-
-.hmap-l2 {
-  background: hsla(var(--accent-hue), 100%, 76%, 0.52);
-}
-
-.hmap-l3 {
-  background: hsla(var(--accent-hue), 100%, 72%, 0.78);
-}
-
-.hmap-l4 {
-  background: hsl(var(--accent-hue), 100%, 70%);
-  box-shadow: 0 0 6px hsla(var(--accent-hue), 100%, 76%, 0.55);
-}
-
-.hmap__legend {
+.el-snake__stats {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 12px;
-  font-size: 11px;
-  color: var(--el-text-mute);
+  gap: 14px;
 }
 
-.hmap__legend .hmap__cell {
-  width: 11px;
-  height: 11px;
+.el-snake__stats b {
+  font-family: 'Space Grotesk', 'DM Sans', sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: var(--el-sakura-deep);
 }
 
-.hmap__legend-text {
-  margin: 0 2px;
+/* ---- 悬浮提示（单例，挂在 body 上）---- */
+.el-snake-tip {
+  position: fixed;
+  z-index: 10000;
+  padding: 6px 10px;
+  border: 1px solid var(--el-glass-border);
+  border-radius: 9px;
+  background: var(--el-glass-bg-strong);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  box-shadow: var(--el-shadow-2);
+  color: var(--el-text);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -100%) scale(0.9);
+  transition: opacity 0.18s var(--el-ease), transform 0.18s var(--el-ease);
 }
+
+.el-snake-tip.is-show {
+  opacity: 1;
+  transform: translate(-50%, -100%) scale(1);
+}
+
+/* ==========================================================================
+   5. 倒计时 + 日历（沿用旧版）
+   ========================================================================== */
 
 /* ---- 两个小组件 ---- */
 .el-dashboard__widgets {
@@ -491,15 +892,64 @@
   cursor: pointer;
 }
 
-/* ---- 响应式 ---- */
+/* ==========================================================================
+   6. 响应式与性能降级
+   ========================================================================== */
+
+/* 首页：个人资料卡已并入 Hero，隐藏侧栏作者卡（避免头像/简介重复两份） */
+body.el-hero-dashboard #aside-content .card-info {
+  display: none;
+}
+
 @media screen and (max-width: 768px) {
+  /* 手机：改成纵向布局（个人卡片 ↓ 热力图） */
+  .el-dashboard__hero {
+    grid-template-columns: 1fr;
+  }
+
   .el-dashboard__widgets {
     grid-template-columns: 1fr;
+  }
+
+  /* 手机端蛇形看板格点略缩，减少横向滚动距离 */
+  .el-snake__scroll {
+    --snake-cell: 10px;
+    --snake-gap: 2.5px;
+  }
+
+  .el-profile__avatar {
+    width: 96px;
+    height: 96px;
+  }
+
+  .el-profile__social {
+    gap: 8px;
+  }
+
+  .el-profile__social .social-icon {
+    width: 36px;
+    height: 36px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hmap-l4 {
+  .el-snake-cell.is-on,
+  .el-profile__avatar img,
+  .el-profile__avatar::after,
+  .el-snake-head {
+    animation: none;
+  }
+
+  .el-snake-cell.lv4,
+  .el-snake-swatch.lv4 {
     box-shadow: none;
   }
+}
+
+/* 省流 / 低性能设备：JS 会给 <html> 加 .no-fx（site-fx.js 的能力判定） */
+html.no-fx .el-snake-cell.is-on,
+html.no-fx .el-profile__avatar img,
+html.no-fx .el-profile__avatar::after,
+html.no-fx .el-snake-head {
+  animation: none;
 }
