@@ -1,0 +1,333 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>十月 2026 | EndlessLiu</title><meta name="author" content="EndlessLiu"><meta name="copyright" content="EndlessLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#f6f2f8"><meta name="description" content="Welcome to EndlessLiu&#39;s Blog !">
+<meta property="og:type" content="website">
+<meta property="og:title" content="十月 2026">
+<meta property="og:url" content="https://endlessliu.github.io/archives/2026/10/index.html">
+<meta property="og:site_name" content="EndlessLiu">
+<meta property="og:description" content="Welcome to EndlessLiu&#39;s Blog !">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://endlessliu.github.io/img/avatar.webp">
+<meta property="article:author" content="EndlessLiu">
+<meta property="article:tag" content="Computer Science">
+<meta property="article:tag" content="GitHub">
+<meta property="article:tag" content="Hexo">
+<meta property="article:tag" content="java">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://endlessliu.github.io/img/avatar.webp"><script type="application/ld+json"></script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://endlessliu.github.io/archives/2026/10/index.html"><link rel="preconnect"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.0"><link rel="stylesheet" href="/pluginsSrc/@fortawesome/fontawesome-free/css/all.min.css?v=7.3.1"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        const data = { value }
+
+        if (ttl != null) {
+          data.expiry = Date.now() + ttl * 86400000
+        }
+
+        localStorage.setItem(key, JSON.stringify(data))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#1e1221')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#f6f2f8')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: '/pluginsSrc/@egjs/infinitegrid/dist/infinitegrid.min.js?v=4.13.0',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '十月 2026',
+  isHighlightShrink: false,
+  isToc: false,
+  pageType: 'archive'
+}</script><link rel="stylesheet" href="/css/custom.css"><link rel="stylesheet" href="/css/music.css"><link rel="stylesheet" href="/css/vision.css"><link rel="stylesheet" href="/css/appearance.css"><link rel="stylesheet" href="/css/photo-wall.css"><link rel="stylesheet" href="/css/about.css"><link rel="stylesheet" href="/css/pet.css"><link rel="stylesheet" href="/css/dashboard.css"><link rel="stylesheet" href="/css/background.css"><link rel="stylesheet" href="/css/page-transition.css"><link rel="stylesheet" href="/css/friends.css"><link rel="stylesheet" href="/css/explore.css"><script>
+(function () {
+  try {
+    var r = document.documentElement, ls = window.localStorage;
+
+    var h = parseInt(ls.getItem('el-accent-hue'), 10);
+    if (!isNaN(h) && h >= 0 && h <= 360) r.style.setProperty('--accent-hue', String(h));
+
+    // 无显式亮暗选择（首次访问 / 选了"跟随系统"）就跟随系统；
+    // theme 键由 Butterfly 的 saveToLocal 存成 JSON，未选择时 getItem 为 null。
+    if (ls.getItem('theme') === null) {
+      var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+      if (mq) r.dataset.theme = mq.matches ? 'dark' : 'light';
+    }
+  } catch (e) { /* 隐私模式 / 沙箱里 localStorage 会抛，静默退回默认外观 */ }
+})();
+</script>
+<meta name="generator" content="Hexo 8.1.2"><script>window.EL_BG_POOL=["/img/photos/199.jpg","/img/photos/200.jpg","/img/photos/201.jpg","/img/photos/202.jpg","/img/photos/203.jpg","/img/photos/204.jpg","/img/photos/205.jpg","/img/photos/206.jpg","/img/photos/207.jpg","/img/photos/208.jpg","/img/photos/209.jpg","/img/photos/210.jpg","/img/photos/211.jpg","/img/photos/212.jpg","/img/photos/213.jpg","/img/photos/214.jpg","/img/photos/215.jpg","/img/photos/216.jpg","/img/photos/217.jpg","/img/photos/218.jpg","/img/photos/219.jpg","/img/photos/220.jpg","/img/photos/221.jpg","/img/photos/222.jpg","/img/photos/223.jpg","/img/photos/224.jpg","/img/photos/225.jpg","/img/photos/226.jpg","/img/photos/227.jpg","/img/photos/228.jpg"];</script></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (true) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/img/hyxhn.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.webp" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/ loading='lazy'></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">32</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/photos/"><i class="fa-fw fas fa-images"></i><span> 照片墙</span></a></div><div class="menus_item"><a class="site-page" href="/friends/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/guestbook/"><i class="fa-fw fas fa-comment-dots"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于</span></a></div></div></div></div><div class="page" id="body-wrap"><header class="not-home-page fixed" id="page-header" style="background-image: url(/img/hyxhn.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">EndlessLiu</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/photos/"><i class="fa-fw fas fa-images"></i><span> 照片墙</span></a></div><div class="menus_item"><a class="site-page" href="/friends/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/guestbook/"><i class="fa-fw fas fa-comment-dots"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="page-site-info"><h1 id="site-title">十月 2026</h1></div></header><main class="layout" id="content-inner"><div id="archive"><div class="article-sort-title">全部文章 - 1</div><div class="article-sort"><div class="article-sort-item year">2026</div><div class="article-sort-item"><a class="article-sort-item-img" href="/2026/10/01/%E5%8E%9F%E6%9D%A5%EF%BC%8C%E8%A2%AB%E4%BA%BA%E8%AE%B0%E5%BE%97%E4%B9%9F%E6%98%AF%E4%B8%80%E7%A7%8D%E5%B9%B8%E7%A6%8F/" title="原来，被人记得也是一种幸福"><img src="/img/photos/224.jpg" alt="原来，被人记得也是一种幸福" onerror="this.onerror=null;this.src='/img/404.jpg'" loading='lazy'></a><div class="article-sort-item-info"><div class="article-sort-item-time"><i class="far fa-calendar-alt"></i><time class="post-meta-date-created" datetime="2026-10-01T10:00:00.000Z" title="发表于 2026-10-01 18:00:00">2026-10-01</time></div><a class="article-sort-item-title" href="/2026/10/01/%E5%8E%9F%E6%9D%A5%EF%BC%8C%E8%A2%AB%E4%BA%BA%E8%AE%B0%E5%BE%97%E4%B9%9F%E6%98%AF%E4%B8%80%E7%A7%8D%E5%B9%B8%E7%A6%8F/" title="原来，被人记得也是一种幸福">原来，被人记得也是一种幸福</a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.webp" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/ loading='lazy'></div><div class="author-info-name">EndlessLiu</div><div class="author-info-description">零碎的岛屿终会找到海
+</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">11</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">32</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">6</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/EndlessLiu"><i class="fab fa-github"></i><span>GitHub</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/EndlessLiu" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="https://space.bilibili.com/474189920" target="_blank" title="哔哩哔哩"><i class="fab fa-bilibili" style="color: #00A1D6;"></i></a><a class="social-icon" href="https://www.douyin.com/user/MS4wLjABAAAA55ENT3EUyM6GMUDZfL9ZA-sptwx83k2uV4Z6QjFi-LZDLYSo0qVwmS-O-Z47ddCi" target="_blank" title="抖音"><i class="fab fa-tiktok" style="color: #000000;"></i></a><a class="social-icon" href="https://www.xiaohongshu.com/user/profile/5e9a29330000000001009fe0" target="_blank" title="小红书"><i class="el-icon-xhs" style="color: #FF2442;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">万语难尽涩于口，祈尔繁芜胜常春</div></div><div class="sticky_layout"><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/10/01/%E5%8E%9F%E6%9D%A5%EF%BC%8C%E8%A2%AB%E4%BA%BA%E8%AE%B0%E5%BE%97%E4%B9%9F%E6%98%AF%E4%B8%80%E7%A7%8D%E5%B9%B8%E7%A6%8F/" title="原来，被人记得也是一种幸福"><img src="/img/photos/224.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="原来，被人记得也是一种幸福"/ loading='lazy'></a><div class="content"><a class="title" href="/2026/10/01/%E5%8E%9F%E6%9D%A5%EF%BC%8C%E8%A2%AB%E4%BA%BA%E8%AE%B0%E5%BE%97%E4%B9%9F%E6%98%AF%E4%B8%80%E7%A7%8D%E5%B9%B8%E7%A6%8F/" title="原来，被人记得也是一种幸福">原来，被人记得也是一种幸福</a><time datetime="2026-10-01T10:00:00.000Z" title="发表于 2026-10-01 18:00:00">2026-10-01</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/09/27/%E6%88%91%E7%9C%9F%E6%AD%A3%E5%AE%B3%E6%80%95%E7%9A%84%EF%BC%8C%E4%BB%8E%E6%9D%A5%E4%B8%8D%E6%98%AF%E8%B7%91%E4%B8%8D%E5%8A%A8/" title="我真正害怕的，从来不是跑不动"><img src="/img/photos/206.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="我真正害怕的，从来不是跑不动"/ loading='lazy'></a><div class="content"><a class="title" href="/2026/09/27/%E6%88%91%E7%9C%9F%E6%AD%A3%E5%AE%B3%E6%80%95%E7%9A%84%EF%BC%8C%E4%BB%8E%E6%9D%A5%E4%B8%8D%E6%98%AF%E8%B7%91%E4%B8%8D%E5%8A%A8/" title="我真正害怕的，从来不是跑不动">我真正害怕的，从来不是跑不动</a><time datetime="2026-09-27T14:00:00.000Z" title="发表于 2026-09-27 22:00:00">2026-09-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/09/27/hello-world/" title="Hello World"><img src="/img/photos/202.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Hello World"/ loading='lazy'></a><div class="content"><a class="title" href="/2026/09/27/hello-world/" title="Hello World">Hello World</a><time datetime="2026-09-27T13:29:25.130Z" title="发表于 2026-09-27 21:29:25">2026-09-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/09/27/WorkBuddy%E4%B8%8B%E8%BD%BD%E4%B8%8E%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97/" title="WorkBuddy 下载与使用指南：让 AI 真正帮你处理本地文件、文档和 PPT"><img src="/img/photos/201.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="WorkBuddy 下载与使用指南：让 AI 真正帮你处理本地文件、文档和 PPT"/ loading='lazy'></a><div class="content"><a class="title" href="/2026/09/27/WorkBuddy%E4%B8%8B%E8%BD%BD%E4%B8%8E%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97/" title="WorkBuddy 下载与使用指南：让 AI 真正帮你处理本地文件、文档和 PPT">WorkBuddy 下载与使用指南：让 AI 真正帮你处理本地文件、文档和 PPT</a><time datetime="2026-09-27T12:00:00.000Z" title="发表于 2026-09-27 20:00:00">2026-09-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/09/27/%E6%88%91%E7%9A%84OpenClaw/" title="我的 OpenClaw：把 AI 从聊天框变成真正能做事的个人智能体 🦞"><img src="/img/photos/200.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="我的 OpenClaw：把 AI 从聊天框变成真正能做事的个人智能体 🦞"/ loading='lazy'></a><div class="content"><a class="title" href="/2026/09/27/%E6%88%91%E7%9A%84OpenClaw/" title="我的 OpenClaw：把 AI 从聊天框变成真正能做事的个人智能体 🦞">我的 OpenClaw：把 AI 从聊天框变成真正能做事的个人智能体 🦞</a><time datetime="2026-09-26T16:00:00.000Z" title="发表于 2026-09-27 00:00:00">2026-09-27</time></div></div></div></div><div class="card-widget card-categories"><div class="item-headline"><i class="fas fa-folder-open"></i><span>分类</span></div>
+          <ul class="card-category-list" id="aside-cat-list">
+            <li class="card-category-list-item "><a class="card-category-list-link" href="/categories/%E6%8A%80%E6%9C%AF/"><span class="card-category-list-name">技术</span><span class="card-category-list-count">6</span></a><ul class="card-category-list child"><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/%E6%8A%80%E6%9C%AF/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="card-category-list-name">操作系统</span><span class="card-category-list-count">1</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/%E6%8A%80%E6%9C%AF/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="card-category-list-name">数据库</span><span class="card-category-list-count">1</span></a></li></ul></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/%E7%94%9F%E6%B4%BB/"><span class="card-category-list-name">生活</span><span class="card-category-list-count">1</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/%E8%B7%91%E6%AD%A5/"><span class="card-category-list-name">跑步</span><span class="card-category-list-count">2</span></a></li><li class="card-category-list-item "><a class="card-category-list-link" href="/categories/%E9%9A%8F%E7%AC%94/"><span class="card-category-list-name">随笔</span><span class="card-category-list-count">1</span></a></li>
+          </ul></div><div class="card-widget card-tags"><div class="item-headline"><i class="fas fa-tags"></i><span>标签</span></div><div class="card-tag-cloud"><a href="/tags/Tkinter/" style="font-size: 1.1em; color: #999">Tkinter</a> <a href="/tags/Hexo/" style="font-size: 1.37em; color: #99a4b2">Hexo</a> <a href="/tags/E-R%E5%9B%BE/" style="font-size: 1.1em; color: #999">E-R图</a> <a href="/tags/%E7%B3%BB%E7%BB%9F/" style="font-size: 1.1em; color: #999">系统</a> <a href="/tags/GUI/" style="font-size: 1.23em; color: #999ea6">GUI</a> <a href="/tags/SQL/" style="font-size: 1.1em; color: #999">SQL</a> <a href="/tags/%E9%A9%AC%E6%8B%89%E6%9D%BE/" style="font-size: 1.1em; color: #999">马拉松</a> <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" style="font-size: 1.1em; color: #999">内存管理</a> <a href="/tags/Python/" style="font-size: 1.1em; color: #999">Python</a> <a href="/tags/%E7%94%9F%E6%97%A5/" style="font-size: 1.1em; color: #999">生日</a> <a href="/tags/%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6/" style="font-size: 1.1em; color: #999">进程调度</a> <a href="/tags/%E9%9A%8F%E7%AC%94/" style="font-size: 1.5em; color: #99a9bf">随笔</a> <a href="/tags/%E5%B7%A5%E5%85%B7/" style="font-size: 1.1em; color: #999">工具</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" style="font-size: 1.1em; color: #999">数据库</a> <a href="/tags/%E8%AE%B0%E5%BD%95/" style="font-size: 1.1em; color: #999">记录</a> <a href="/tags/%E9%A1%B5%E9%9D%A2%E7%BD%AE%E6%8D%A2/" style="font-size: 1.1em; color: #999">页面置换</a> <a href="/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/" style="font-size: 1.1em; color: #999">操作系统</a> <a href="/tags/%E9%A4%90%E5%8E%85%E7%82%B9%E8%8F%9C%E7%AE%A1%E7%90%86%E7%B3%BB%E7%BB%9F/" style="font-size: 1.1em; color: #999">餐厅点菜管理系统</a> <a href="/tags/%E6%81%A2%E5%A4%8D/" style="font-size: 1.1em; color: #999">恢复</a> <a href="/tags/%E5%9D%9A%E6%8C%81/" style="font-size: 1.1em; color: #999">坚持</a> <a href="/tags/%E7%A7%91%E5%AD%A6%E8%AE%AD%E7%BB%83/" style="font-size: 1.1em; color: #999">科学训练</a> <a href="/tags/%E7%BB%8F%E9%AA%8C/" style="font-size: 1.1em; color: #999">经验</a> <a href="/tags/%E7%94%9F%E6%B4%BB/" style="font-size: 1.1em; color: #999">生活</a> <a href="/tags/%E8%AF%BE%E7%A8%8B%E8%AE%BE%E8%AE%A1/" style="font-size: 1.23em; color: #999ea6">课程设计</a> <a href="/tags/Agent/" style="font-size: 1.1em; color: #999">Agent</a> <a href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="font-size: 1.1em; color: #999">文件系统</a> <a href="/tags/%E8%87%AA%E5%BE%8B/" style="font-size: 1.1em; color: #999">自律</a> <a href="/tags/GitHub/" style="font-size: 1.1em; color: #999">GitHub</a> <a href="/tags/OpenClaw/" style="font-size: 1.1em; color: #999">OpenClaw</a> <a href="/tags/%E7%A3%81%E7%9B%98%E8%B0%83%E5%BA%A6/" style="font-size: 1.1em; color: #999">磁盘调度</a> <a href="/tags/WorkBuddy/" style="font-size: 1.1em; color: #999">WorkBuddy</a> <a href="/tags/AI/" style="font-size: 1.23em; color: #999ea6">AI</a></div></div><div class="card-widget card-archives">
+    <div class="item-headline"><i class="fas fa-archive"></i><span>归档</span></div>
+  
+    <ul class="card-archive-list">
+      
+        <li class="card-archive-list-item">
+          <a class="card-archive-list-link" href="/archives/2026/10/">
+            <span class="card-archive-list-date">
+              十月 2026
+            </span>
+            <span class="card-archive-list-count">1</span>
+          </a>
+        </li>
+      
+        <li class="card-archive-list-item">
+          <a class="card-archive-list-link" href="/archives/2026/09/">
+            <span class="card-archive-list-date">
+              九月 2026
+            </span>
+            <span class="card-archive-list-count">8</span>
+          </a>
+        </li>
+      
+        <li class="card-archive-list-item">
+          <a class="card-archive-list-link" href="/archives/2026/06/">
+            <span class="card-archive-list-date">
+              六月 2026
+            </span>
+            <span class="card-archive-list-count">2</span>
+          </a>
+        </li>
+      
+    </ul>
+  </div><div class="card-widget card-webinfo"><div class="item-headline"><i class="fas fa-chart-line"></i><span>网站信息</span></div><div class="webinfo"><div class="webinfo-item"><div class="item-name">文章数目 :</div><div class="item-count">11</div></div><div class="webinfo-item"><div class="item-name">本站总字数 :</div><div class="item-count">24.8k</div></div><div class="webinfo-item"><div class="item-name">本站访客数 :</div><div class="item-count" id="busuanzi_value_site_uv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">本站总浏览量 :</div><div class="item-count" id="busuanzi_value_site_pv"><i class="fa-solid fa-spinner fa-spin"></i></div></div><div class="webinfo-item"><div class="item-name">最后更新时间 :</div><div class="item-count" id="last-push-date" data-lastPushDate="2026-10-01T11:08:54.070Z"><i class="fa-solid fa-spinner fa-spin"></i></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By EndlessLiu</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.2</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.0"></script><script src="/js/main.js?v=5.7.0"></script><div class="js-pjax"></div><script src="/js/site-fx.js"></script><script src="/js/music.js"></script><script src="/js/vision.js"></script><script src="/js/appearance.js"></script><script src="/js/photo-wall.js"></script><script src="/js/pet.js"></script><script src="/js/dashboard.js"></script><script src="/js/about.js"></script><script src="/js/background.js"></script><script src="/js/page-transition.js"></script><script src="/js/friends.js"></script><script src="/pluginsSrc/pjax/pjax.min.js?v=0.2.8" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["meta[property=\"og:image\"]","meta[property=\"og:title\"]","meta[property=\"og:url\"]","meta[property=\"og:description\"]","link[rel=\"canonical\"]","head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      false
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
